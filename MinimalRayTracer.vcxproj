@@ -102,6 +102,10 @@
   <ItemGroup>
     <ClInclude Include="helper_math.h" />
     <ClInclude Include="include\demo.h" />
+    <ClInclude Include="Ray\Ray.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Ray\Ray.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
