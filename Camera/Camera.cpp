@@ -16,7 +16,7 @@ CUDA_FUNC Camera::Camera(const float3 &pos, const float3 &lookat, const float &f
         0.0f, 0.0f, 0.0f, 1.0f
     );
 
-    world2raster =scale(make_float3(1.0f / resolution.x, 1.0f / resolution.y, 1.0f))
+    world2raster =scale(make_float3(resolution.x, resolution.y, 1.0f))
         * pers * world2raster;
 
     raster2world = inverse(world2raster);
