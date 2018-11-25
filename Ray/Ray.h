@@ -1,6 +1,10 @@
 #pragma once
 #include "helper_math.h"
+
+#ifndef CUDA_FUNC
 #define CUDA_FUNC __host__ __device__
+#endif
+
 class Ray
 {
 public:
