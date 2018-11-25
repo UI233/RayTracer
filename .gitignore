@@ -20,3 +20,9 @@ x64/Debug/MinimalRayTracer.tlog/link.write.1.tlog
 x64/Debug/MinimalRayTracer.tlog/MinimalRayTracer.lastbuildstate
 x64/Debug/MinimalRayTracer.tlog/MinimalRayTracer.write.1u.tlog
 x64/Debug/vc141.pdb
+*.ipch
+*.obj
+*.deps
+*.cache
+*.tlog
+*.log

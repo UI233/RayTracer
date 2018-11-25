@@ -1,4 +1,4 @@
-#include "Matrix.h"
+#include "Matrix.cuh"
 #include <cmath>
 
 CUDA_FUNC mat4::mat4(const float &a)
@@ -150,12 +150,12 @@ CUDA_FUNC mat4 operator *(const mat4 &m, const float &b)
 
 CUDA_FUNC mat4 rotation(const float &angle, const float3 &axis)
 {
-    mat4 k (
+    mat4 k(
         0.0f, -axis.z, axis.y, 0.0f,
         axis.z, 0.0f, -axis.x, 0.0f,
-        -axis.z, axis.x,  0.0f, 0.0f,
+        -axis.z, axis.x, 0.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f
-        );
+    );
     return mat4(1.0f) + sin(angle) * k + (1 - cos(angle)) * k * k;
 }
 

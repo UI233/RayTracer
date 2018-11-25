@@ -11,8 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{750C954E-2609-4402-8021-ED4B1C624A86}</ProjectGuid>
-    <RootNamespace>MinimalRayTracer</RootNamespace>
+    <ProjectGuid>{DF4F40B0-FDA4-4AAA-BC89-4E0BE51860F1}</ProjectGuid>
+    <RootNamespace>RayTracer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -42,12 +42,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\RayTracer\RayTracer;D:\RayTracer\RayTracer\include;$(IncludePath)</IncludePath>
-    <SourcePath>D:\RayTracer\RayTracer;$(SourcePath)</SourcePath>
+    <IncludePath>D:\RayTracer\RayTracer\src\RayTracer;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\RayTracer\RayTracer;D:\RayTracer\RayTracer\include;$(IncludePath)</IncludePath>
-    <SourcePath>D:\RayTracer\RayTracer;$(SourcePath)</SourcePath>
+    <IncludePath>D:\RayTracer\RayTracer\src\RayTracer;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -63,12 +61,8 @@
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-      <Runtime>InheritFromHost</Runtime>
+      <Include>D:\RayTracer\RayTracer\src\RayTracer;%(Include)</Include>
     </CudaCompile>
-    <CudaLink>
-      <GPUDebugInfo>true</GPUDebugInfo>
-      <AdditionalOptions>--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
-    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -88,28 +82,22 @@
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-      <Runtime>InheritFromHost</Runtime>
+      <Include>D:\RayTracer\RayTracer\src\RayTracer;%(Include)</Include>
     </CudaCompile>
-    <CudaLink>
-      <GPUDebugInfo>true</GPUDebugInfo>
-      <AdditionalOptions>--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
-    </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="demo.cu" />
+    <CudaCompile Include="Camera\Camera.cu" />
     <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="Matrix\Matrix.cu" />
+    <CudaCompile Include="Model\Model.cu" />
+    <CudaCompile Include="Ray\Ray.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Camera\Camera.h" />
+    <ClInclude Include="Camera\Camera.cuh" />
     <ClInclude Include="helper_math.h" />
-    <ClInclude Include="include\demo.h" />
-    <ClInclude Include="Matrix\Matrix.h" />
-    <ClInclude Include="Ray\Ray.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Camera\Camera.cpp" />
-    <ClCompile Include="Matrix\Matrix.cpp" />
-    <ClCompile Include="Ray\Ray.cpp" />
+    <ClInclude Include="Matrix\Matrix.cuh" />
+    <ClInclude Include="Model\Model.cuh" />
+    <ClInclude Include="Ray\Ray.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

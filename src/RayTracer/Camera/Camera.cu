@@ -1,6 +1,6 @@
-#include "Camera.h"
+#include "Camera.cuh"
 
-CUDA_FUNC Camera::Camera(const float3 &pos, const float3 &lookat, const float &fov, const float &near, const float &far, const int2 &res, const float3 &u = make_float3(0.0f, 0.0f, 1.0f)):
+CUDA_FUNC Camera::Camera(const float3 &pos, const float3 &lookat, const float &fov, const float &near, const float &far, const int2 &res, const float3 &u) :
     pos(pos),
     up(normalize(u)),
     front(normalize(lookat - pos)),
@@ -16,7 +16,7 @@ CUDA_FUNC Camera::Camera(const float3 &pos, const float3 &lookat, const float &f
         0.0f, 0.0f, 0.0f, 1.0f
     );
 
-    world2raster =scale(make_float3(resolution.x, resolution.y, 1.0f))
+    world2raster = scale(make_float3(resolution.x, resolution.y, 1.0f))
         * pers * world2raster;
 
     raster2world = inverse(world2raster);
@@ -27,7 +27,7 @@ CUDA_FUNC Ray Camera::generateRay(int x, int y, curandState *state)
     //float2 offset(sampler2D());
     //The direction of ray which computes the color of the pixel on (x,y)
     float3 sample_direction(raster2world(make_float3(x, y, 0.0f)));
-    
+
     return Ray(pos, sample_direction);
 }
 
