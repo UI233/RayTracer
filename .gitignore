@@ -28,3 +28,8 @@ x64/Debug/vc141.pdb
 *.log
 *.db
 *.pdb
+*.json
+*.opendb
+*.exe
+*.exp
+*.ilk
