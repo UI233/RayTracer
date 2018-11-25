@@ -13,5 +13,13 @@
     <ClInclude Include="Matrix\Matrix.cuh" />
     <ClInclude Include="Model\Model.cuh" />
     <ClInclude Include="Ray\Ray.cuh" />
+    <ClInclude Include="Shader\myShader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="include\glut\src\gl3w.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shader\texture.frag" />
+    <None Include="Shader\texture.vert" />
   </ItemGroup>
 </Project>

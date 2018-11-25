@@ -32,6 +32,7 @@ CUDA_FUNC mat4 operator *(const mat4 &, const float &);
 
 CUDA_FUNC mat4 inverse(const mat4 &);
 //return the matrix representing rotating about given axis
+//Compute the matrix representing the rotation using Rodrigues' rotation formula
 CUDA_FUNC mat4 rotation(const float &angle, const float3 &axis);
 //return the matrix representing tranlating for given offset
 CUDA_FUNC mat4 translation(const float3 &offset);

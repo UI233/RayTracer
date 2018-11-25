@@ -116,7 +116,6 @@ CUDA_FUNC mat4 operator -(const mat4 &a, const mat4 &b)
     return res;
 }
 
-
 CUDA_FUNC mat4 operator *(const float &b, const mat4 &m)
 {
     mat4 res = m;
@@ -129,7 +128,6 @@ CUDA_FUNC mat4 operator *(const mat4 &m, const float &b)
     return b * m;
 }
 
-//Compute the matrix representing the rotation using Rodrigues' rotation formula 
 CUDA_FUNC mat4 rotation(const float &angle, const float3 &axis)
 {
     //K is the matrix which represent the cross product with axis
