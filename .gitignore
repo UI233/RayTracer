@@ -26,3 +26,5 @@ x64/Debug/vc141.pdb
 *.cache
 *.tlog
 *.log
+*.db
+*.pdb

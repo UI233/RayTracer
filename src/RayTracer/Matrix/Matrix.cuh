@@ -12,7 +12,6 @@ public:
         const float &a21, const float &a22, const float &a23, const float &a24,
         const float &a31, const float &a32, const float &a33, const float &a34,
         const float &a41, const float &a42, const float &a43, const float &a44);
-    CUDA_FUNC mat4(const mat4 &) = default;
     CUDA_FUNC ~mat4() = default;
 
     CUDA_FUNC Ray operator()(const Ray &) const;

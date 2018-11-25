@@ -6,7 +6,7 @@ CUDA_FUNC mat4::mat4(const float &a)
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             v[i][j] = 0.0f;
-    v[0][0] = v[1][1] = v[2][2] = v[3][3] = v[4][4] = a;
+    v[0][0] = v[1][1] = v[2][2] = v[3][3] = a;
 }
 
 CUDA_FUNC mat4::mat4(
@@ -74,29 +74,10 @@ CUDA_FUNC float4 mat4::operator()(const float4 &vec4) const
 {
     float4 res;
 
-    for (int i = 0; i < 4; i++)
-    {
-        float& ele(res.x);
-        switch (i)
-        {
-        case 0:
-            ele = res.x;
-            break;
-        case 1:
-            ele = res.y;
-            break;
-        case 2:
-            ele = res.z;
-            break;
-        case 3:
-            ele = res.w;
-            break;
-        default:
-            break;
-        }
-
-        ele = v[i][0] * vec4.x + v[i][1] * vec4.y + v[i][2] * vec4.z + v[i][3] * vec4.w;
-    }
+    res.x = v[0][0] * vec4.x + v[0][1] * vec4.y + v[0][2] * vec4.z + v[0][3] * vec4.w;
+    res.y = v[1][0] * vec4.x + v[1][1] * vec4.y + v[1][2] * vec4.z + v[1][3] * vec4.w;
+    res.z = v[2][0] * vec4.x + v[2][1] * vec4.y + v[2][2] * vec4.z + v[2][3] * vec4.w;
+    res.w = v[3][0] * vec4.x + v[3][1] * vec4.y + v[3][2] * vec4.z + v[3][3] * vec4.w;
 
     return res;
 }
@@ -116,21 +97,21 @@ CUDA_FUNC Ray mat4::operator()(const Ray &r) const
 
 CUDA_FUNC mat4 operator *(const mat4 &a, const mat4 &b)
 {
-    mat4 res(a);
+    mat4 res = a;
     res *= b;
     return res;
 }
 
 CUDA_FUNC mat4 operator +(const mat4 &a, const mat4 &b)
 {
-    mat4 res(a);
+    mat4 res = a;
     res += b;
     return res;
 }
 
 CUDA_FUNC mat4 operator -(const mat4 &a, const mat4 &b)
 {
-    mat4 res(a);
+    mat4 res = a;
     res -= b;
     return res;
 }
@@ -150,6 +131,7 @@ CUDA_FUNC mat4 operator *(const mat4 &m, const float &b)
 
 CUDA_FUNC mat4 rotation(const float &angle, const float3 &axis)
 {
+    //K is the matrix which represent the cross product with axis
     mat4 k(
         0.0f, -axis.z, axis.y, 0.0f,
         axis.z, 0.0f, -axis.x, 0.0f,

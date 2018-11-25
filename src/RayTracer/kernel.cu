@@ -7,7 +7,7 @@
 #include "vector_functions.hpp"
 #include <device_functions.h>
 #include "Model/Model.cuh"
-
+#include "Camera/Camera.cuh"
 //
 //__device__ inline float shadowRay(float3 pos, curandState *state, int idx)
 //{
@@ -112,62 +112,48 @@
 //    //color = make_float3(1.0f, 0.0f, 1.0f);
 //}   
 
-__global__ void launch(curandState *state, float3 *in)
+__global__ void launch()
 {
    // Model *p = new Triangle();
-    float3 k;
-    Ray r(make_float3(0.0f, 0.0f, 0.0f), make_float3(0.0f, 0.0f, 1.0f));
     
+    Camera k(make_float3(0.0f, 0.0f, 0.0f), make_float3(0.0f, 0.0f, 1.0f), 1.3, 1e-2f, 100.0f, make_int2(200, 100), make_float3(.0f, 1.0f, .0f));
+    Ray r = k.generateRay(200, 50, NULL);
+    int i;
+    float3 a = r.getDir(), b = r.getOrigin();
+    printf("%f %f %f\n%f %f %f\n", a.x, a.y, a.z, b.x, b.y, b.z);
     return;
 }
 
-float3 color_buffer[WIDTH * HEIGHT + 10];
-void drawToFile()
-{
-    FILE *out = fopen("test.ppm", "w");
 
-    int count = 0;
-
-    fprintf(out, "P3\n%d %d\n255\n",WIDTH, HEIGHT);
-    for (int j = 0; j < HEIGHT; j++)
-        for (int i = 0; i < WIDTH; i++, count++)
-            fprintf(out, "%d %d %d\n", (int)(color_buffer[count].x * 255.99f), (int)(color_buffer[count].y * 255.99f), (int)(color_buffer[count].z * 255.99f));
-
-    fclose(out);
-    return;
-}
-
-void computeTexture()
-{
-    constexpr unsigned int block_x(2), block_y(3);
-    constexpr unsigned int threads_x(1), threads_y(1);
-
-    dim3 blocksNum(block_x, block_y);
-    dim3 threadsPerBlock(threads_x, threads_y);
-
-    curandState *state;
-    cudaError_t cudaStatus;
-    float3 *buffer;
-    cudaStatus = cudaSetDevice(0);
-    cudaStatus = cudaMalloc((void **)&state, sizeof(curandState) * 200 * 30);
-    cudaStatus = cudaMalloc((void**)&buffer, sizeof(float3) * WIDTH * HEIGHT);
-    launch << < blocksNum, threadsPerBlock >> > (state, buffer);
-
-    cudaStatus = cudaDeviceSynchronize();
-
-    //cudaStatus = cudaMemcpy(color_buffer, buffer, sizeof(float3) * WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
-
-    //cudaFree(state);
-    //cudaFree(buffer);
-}
-void loadToGL()
-{
-
-}
+void computeTexture();
+//{
+//    constexpr unsigned int block_x(2), block_y(3);
+//    constexpr unsigned int threads_x(1), threads_y(1);
+//
+//    dim3 blocksNum(block_x, block_y);
+//    dim3 threadsPerBlock(threads_x, threads_y);
+//
+//    curandState *state;
+//    cudaError_t cudaStatus;
+//    float3 *buffer;
+//    cudaStatus = cudaSetDevice(0);
+//    cudaStatus = cudaMalloc((void **)&state, sizeof(curandState) * 200 * 30);
+//    cudaStatus = cudaMalloc((void**)&buffer, sizeof(float3) * WIDTH * HEIGHT);
+//    launch << < blocksNum, threadsPerBlock >> > (state, buffer);
+//
+//    cudaStatus = cudaDeviceSynchronize();
+//
+//    //cudaStatus = cudaMemcpy(color_buffer, buffer, sizeof(float3) * WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
+//
+//    //cudaFree(state);
+//    //cudaFree(buffer);
+//}
+void loadToGL();
 
 int main()
 {
-    
-    drawToFile();
+    mat4 a(1.0f);
+    a = scale(make_float3(0.0f, 2.0f, 3.0f)) * a ;
+    launch <<< 1,5 >>> ();
     return 0;
 }
