@@ -1,15 +1,169 @@
-#define HEIGHT 900
-#define WIDTH 1600
+﻿#define HEIGHT 50
+#define WIDTH 100
 #define NUM 16
 #define MAX_DEPTH 10
 #define SAMPLE 4
+
+#include <glut/gl3w.h>
+#include <Windows.h>
 #include <stdio.h>
-#include "vector_functions.hpp"
+#include "surface_functions.h"
+#include <vector_functions.hpp>
+#include <cuda_gl_interop.h>
 #include <device_functions.h>
 #include "Model/Model.cuh"
 #include "Camera/Camera.cuh"
+#include <glut/glfw3.h>
+#include "Shader/myShader.h"
+
+__global__ void test(cudaSurfaceObject_t surface);
+void display();
+__device__ void computeTexture();
+bool renderScene(bool, cudaGraphicsResource *);
+GLuint initGL();
+bool initCUDA(GLuint glTex, cudaGraphicsResource **cudaTex);
+GLuint tex;
+GLuint prog;
+int main(int argc, char **argv)
+{
+    glfwInit();
+
+    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "test", NULL, NULL);
+    glfwMakeContextCurrent(window);
+    
+    gl3wInit();
+    bool changed = true, state = true;
+    tex = initGL();
+
+    cudaGraphicsResource *cudaTex;
+    auto error = cudaGLSetGLDevice(0);
+    error = cudaGraphicsGLRegisterImage(&cudaTex, tex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsSurfaceLoadStore);
+    error = cudaGraphicsMapResources(1, &cudaTex, 0);
+
+
+    while (!glfwWindowShouldClose(window) && state)
+    {
+        state = renderScene(changed, cudaTex);
+        changed = false;
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return 0;
+}
+
+bool renderScene(bool changed, cudaGraphicsResource *cudaTex)
+{    
+    if (changed)
+    {
+        cudaArray_t texArray;
+        auto error = cudaGraphicsSubResourceGetMappedArray(&texArray, cudaTex, 0, 0);
+        cudaResourceDesc dsc;
+        dsc.resType = cudaResourceTypeArray;
+        dsc.res.array.array = texArray;
+
+        cudaSurfaceObject_t texture_surface;
+        error = cudaCreateSurfaceObject(&texture_surface, &dsc);
+        
+        test <<< WIDTH, HEIGHT >>> (texture_surface);
+        cudaDeviceSynchronize();
+    }
+    display();
+
+    return true;
+}
+
+GLuint initGL()
+{
+    static float vertices[6][2] = {
+        -1.0f, 1.0f,
+        -1.0f, -1.0f,
+        1.0f, 1.0f,
+        1.0f, 1.0f,
+        -1.0f, -1.0f,
+        1.0f, -1.0f
+    };
+    GLuint tex;
+    //initialize the texture
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GLuint buffer;
+    GLuint vao;
+    glCreateBuffers(1, &buffer);
+    glCreateVertexArrays(1, &vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 2, GL_FLOAT, NULL, NULL, nullptr);
+
+    glEnableVertexAttribArray(1);
+
+    prog = glCreateProgram();
+    Shader vertex, frag;
+
+    vertex.LoadFile("./Shader/texture.vert");
+    frag.LoadFile("./Shader/texture.frag");
+    vertex.Load(GL_VERTEX_SHADER, prog);
+    frag.Load(GL_FRAGMENT_SHADER, prog);
+    glLinkProgram(prog);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return tex;
+}
+
+bool initCUDA(GLuint glTex, cudaGraphicsResource **cudaTex)
+{
+    GLuint ds;
+    return 1;
+}
+
+void display()
+{
+    static const float black[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    glUseProgram(prog);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+__global__ void test(cudaSurfaceObject_t surface)
+{
+    int idx = threadIdx.x + blockDim.x * blockIdx.x;
+    int x = idx / HEIGHT;
+    int y = idx % HEIGHT;
+    float4 data = make_float4(0x00, 1.0f, 0.3f, 1.0f);
+    surf2Dwrite(data, surface, x * sizeof(uchar4), y);
+}
+//void computeTexture()
+//{
+//    constexpr unsigned int block_x(2), block_y(3);
+//    constexpr unsigned int threads_x(1), threads_y(1);
 //
-//__device__ inline float shadowRay(float3 pos, curandState *state, int idx)
+//    dim3 blocksNum(block_x, block_y);
+//    dim3 threadsPerBlock(threads_x, threads_y);
+//
+//    curandState *state;
+//    cudaError_t cudaStatus;
+//    float3 *buffer;
+//    cudaStatus = cudaSetDevice(0);
+//    cudaStatus = cudaMalloc((void **)&state, sizeof(curandState) * 200 * 30);
+//    cudaStatus = cudaMalloc((void**)&buffer, sizeof(float3) * WIDTH * HEIGHT);
+//    launch << < blocksNum, threadsPerBlock >> > (state, buffer);
+//
+//    cudaStatus = cudaDeviceSynchronize();
+//
+//    //cudaStatus = cudaMemcpy(color_buffer, buffer, sizeof(float3) * WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
+//
+//    //cudaFree(state);
+//    //cudaFree(buffer);
+//}//__device__ inline float shadowRay(float3 pos, curandState *state, int idx)
 //{
 //    float3 st = l1.sample(idx, SAMPLE, state);
 //    Ray shadow_ray(
@@ -65,7 +219,7 @@
 //
 //    return color;
 //}
-//
+
 //__global__ void launch(curandState *state, float3 *in)
 //{
 //    if (threadIdx.x == 0 && threadIdx.y == 0)
@@ -111,49 +265,3 @@
 //    
 //    //color = make_float3(1.0f, 0.0f, 1.0f);
 //}   
-
-__global__ void launch()
-{
-   // Model *p = new Triangle();
-    
-    Camera k(make_float3(0.0f, 0.0f, 0.0f), make_float3(0.0f, 0.0f, 1.0f), 1.3, 1e-2f, 100.0f, make_int2(200, 100), make_float3(.0f, 1.0f, .0f));
-    Ray r = k.generateRay(200, 50, NULL);
-    int i;
-    float3 a = r.getDir(), b = r.getOrigin();
-    printf("%f %f %f\n%f %f %f\n", a.x, a.y, a.z, b.x, b.y, b.z);
-    return;
-}
-
-
-void computeTexture();
-//{
-//    constexpr unsigned int block_x(2), block_y(3);
-//    constexpr unsigned int threads_x(1), threads_y(1);
-//
-//    dim3 blocksNum(block_x, block_y);
-//    dim3 threadsPerBlock(threads_x, threads_y);
-//
-//    curandState *state;
-//    cudaError_t cudaStatus;
-//    float3 *buffer;
-//    cudaStatus = cudaSetDevice(0);
-//    cudaStatus = cudaMalloc((void **)&state, sizeof(curandState) * 200 * 30);
-//    cudaStatus = cudaMalloc((void**)&buffer, sizeof(float3) * WIDTH * HEIGHT);
-//    launch << < blocksNum, threadsPerBlock >> > (state, buffer);
-//
-//    cudaStatus = cudaDeviceSynchronize();
-//
-//    //cudaStatus = cudaMemcpy(color_buffer, buffer, sizeof(float3) * WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
-//
-//    //cudaFree(state);
-//    //cudaFree(buffer);
-//}
-void loadToGL();
-
-int main()
-{
-    mat4 a(1.0f);
-    a = scale(make_float3(0.0f, 2.0f, 3.0f)) * a ;
-    launch <<< 1,5 >>> ();
-    return 0;
-}
