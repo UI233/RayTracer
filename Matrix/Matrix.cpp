@@ -33,6 +33,10 @@ CUDA_FUNC mat4& mat4::operator *= (const mat4 &b)
             v[i][j] = c.v[i][j];
         }
 
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            v[i][j] = c.v[i][j];
+
     return *this;
 }
 
