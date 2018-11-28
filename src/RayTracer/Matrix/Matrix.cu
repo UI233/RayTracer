@@ -150,12 +150,12 @@ CUDA_FUNC mat4 translation(const float3 &offset)
     return res;
 }
 
-
-CUDA_FUNC mat4 perspective(float fov, float near, float far)
+//ratio = y/x = HEIGHT / WIDTH
+CUDA_FUNC mat4 perspective(float fov, float ratio, float near, float far)
 {
     float inv_tan(1.0f / tan(fov));
     float inv_length(1.0f / (far - near));
-
+    
     mat4 pers(
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
@@ -163,7 +163,7 @@ CUDA_FUNC mat4 perspective(float fov, float near, float far)
         0.0f, 0.0f, 1.0f, 0.0f
     );
 
-    return scale(make_float3(inv_tan, inv_tan, 1.0f)) * pers;
+    return scale(make_float3(ratio * inv_tan, inv_tan, 1.0f)) * pers;
 }
 
 

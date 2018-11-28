@@ -73,10 +73,16 @@ public:
         glShaderSource(index, 1, &content, NULL);
         glCompileShader(index);
         char cas[500];
+        cas[0] = 0;
         glGetShaderInfoLog(index, 500, NULL, cas);
-        printf("Complete?%s\n", cas);
-        glAttachShader(prog, index);
-        return true;
+        if (cas[0] == 0)
+        {
+            printf("Shader Load Complete.\n");
+            glAttachShader(prog, index);
+            return true;
+        }
+        printf("%s\n", cas);
+        return false;
     }
 
     void Clear()

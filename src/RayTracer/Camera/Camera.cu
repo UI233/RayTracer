@@ -5,7 +5,7 @@ CUDA_FUNC Camera::Camera(const float3 &pos, const float3 &lookat, const float &f
     pos(pos),
     up(normalize(u)),
     front(normalize(lookat - pos)),
-    pers(perspective(fov, near, far)),
+    pers(perspective(fov, (float)resolution.y / resolution.x, near, far)),
     resolution(res)
 {
     float3 right = cross(front, up);

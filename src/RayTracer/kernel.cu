@@ -1,4 +1,4 @@
-﻿#define HEIGHT 50
+﻿#define HEIGHT 100
 #define WIDTH 100
 #define NUM 16
 #define MAX_DEPTH 10
@@ -16,35 +16,30 @@
 #include <glut/glfw3.h>
 #include "Shader/myShader.h"
 
-__global__ void test(cudaSurfaceObject_t surface);
+__global__ void test(cudaSurfaceObject_t surface, float time);
 void display();
 __device__ void computeTexture();
-bool renderScene(bool, cudaGraphicsResource *);
+bool renderScene(bool);
 GLuint initGL();
-bool initCUDA(GLuint glTex, cudaGraphicsResource **cudaTex);
+GLFWwindow* glEnvironmentSetup();
+bool initCUDA(GLuint glTex);
+
 GLuint tex;
 GLuint prog;
+cudaGraphicsResource *cudaTex;
+cudaSurfaceObject_t texture_surface;
+
 int main(int argc, char **argv)
 {
-    glfwInit();
-
-    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "test", NULL, NULL);
-    glfwMakeContextCurrent(window);
-    
-    gl3wInit();
+    GLFWwindow *window = glEnvironmentSetup();
     bool changed = true, state = true;
     tex = initGL();
-
-    cudaGraphicsResource *cudaTex;
-    auto error = cudaGLSetGLDevice(0);
-    error = cudaGraphicsGLRegisterImage(&cudaTex, tex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsSurfaceLoadStore);
-    error = cudaGraphicsMapResources(1, &cudaTex, 0);
-
+    initCUDA(tex);
 
     while (!glfwWindowShouldClose(window) && state)
     {
-        state = renderScene(changed, cudaTex);
-        changed = false;
+        state = renderScene(changed);
+        //changed = false;
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -54,29 +49,23 @@ int main(int argc, char **argv)
     return 0;
 }
 
-bool renderScene(bool changed, cudaGraphicsResource *cudaTex)
-{    
-    if (changed)
-    {
-        cudaArray_t texArray;
-        auto error = cudaGraphicsSubResourceGetMappedArray(&texArray, cudaTex, 0, 0);
-        cudaResourceDesc dsc;
-        dsc.resType = cudaResourceTypeArray;
-        dsc.res.array.array = texArray;
+bool renderScene(bool changed)
+{
+    test <<< WIDTH, HEIGHT >>> (texture_surface, 0);
+    auto error = cudaDeviceSynchronize();
 
-        cudaSurfaceObject_t texture_surface;
-        error = cudaCreateSurfaceObject(&texture_surface, &dsc);
-        
-        test <<< WIDTH, HEIGHT >>> (texture_surface);
-        cudaDeviceSynchronize();
-    }
     display();
 
-    return true;
+    //test << < WIDTH, HEIGHT >> > (texture_surface, 1.0f);
+    //cudaDeviceSynchronize();
+    //display();
+
+    return error == cudaSuccess;
 }
 
 GLuint initGL()
 {
+    //The position of the quad which covers the full screen
     static float vertices[6][2] = {
         -1.0f, 1.0f,
         -1.0f, -1.0f,
@@ -86,7 +75,8 @@ GLuint initGL()
         1.0f, -1.0f
     };
     GLuint tex;
-    //initialize the texture
+    //initialize the empty texture
+    //and set the parameter for it
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
@@ -97,6 +87,7 @@ GLuint initGL()
 
     GLuint buffer;
     GLuint vao;
+    //Push the vertices information into the vertex arrayy
     glCreateBuffers(1, &buffer);
     glCreateVertexArrays(1, &vao);
 
@@ -106,6 +97,7 @@ GLuint initGL()
 
     glEnableVertexAttribArray(1);
 
+    //Initialize the OpenGL shaders and program
     prog = glCreateProgram();
     Shader vertex, frag;
 
@@ -115,13 +107,38 @@ GLuint initGL()
     frag.Load(GL_FRAGMENT_SHADER, prog);
     glLinkProgram(prog);
     glBindTexture(GL_TEXTURE_2D, 0);
+
     return tex;
 }
 
-bool initCUDA(GLuint glTex, cudaGraphicsResource **cudaTex)
+GLFWwindow* glEnvironmentSetup()
 {
-    GLuint ds;
-    return 1;
+    glfwInit();
+
+    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "test", NULL, NULL);
+    glfwMakeContextCurrent(window);
+
+    gl3wInit();
+
+    return window;
+}
+
+bool initCUDA(GLuint glTex)
+{
+    auto error = cudaGLSetGLDevice(0);
+    error = cudaGraphicsGLRegisterImage(&cudaTex, tex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsSurfaceLoadStore);
+    error = cudaGraphicsMapResources(1, &cudaTex, 0);
+
+    cudaArray_t texArray;
+    error = cudaGraphicsSubResourceGetMappedArray(&texArray, cudaTex, 0, 0);
+
+    cudaResourceDesc dsc;
+    dsc.resType = cudaResourceTypeArray;
+    dsc.res.array.array = texArray;
+
+    error = cudaCreateSurfaceObject(&texture_surface, &dsc);
+
+    return error == cudaSuccess;
 }
 
 void display()
@@ -133,14 +150,17 @@ void display()
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-__global__ void test(cudaSurfaceObject_t surface)
+__global__ void test(cudaSurfaceObject_t surface, float time)
 {
     int idx = threadIdx.x + blockDim.x * blockIdx.x;
-    int x = idx / HEIGHT;
-    int y = idx % HEIGHT;
-    float4 data = make_float4(0x00, 1.0f, 0.3f, 1.0f);
-    surf2Dwrite(data, surface, x * sizeof(uchar4), y);
+    
+    int y = idx / WIDTH;
+    int x = idx % WIDTH;
+
+    float4 data = make_float4((float) x / WIDTH, (float) y / HEIGHT, time, 1.0f);
+    surf2Dwrite(data, surface, x * sizeof(float4), y);
 }
+
 //void computeTexture()
 //{
 //    constexpr unsigned int block_x(2), block_y(3);
