@@ -1,3 +1,4 @@
+#pragma once
 #include "../Ray/Ray.cuh"
 #include "curand.h"
 #include "curand_kernel.h"

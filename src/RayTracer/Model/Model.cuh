@@ -3,7 +3,7 @@
 #define MODEL_H
 
 #include "helper_math.h"
-#include "Ray/Ray.cuh"
+#include "../Ray/Ray.cuh"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "curand.h"
@@ -12,7 +12,7 @@
 class Model {
 public:
     __host__ __device__ virtual ~Model() = default;
-    __host__ __device__ virtual bool hit(Ray r, float3 &colidePos, curandState *state) = 0;
+    __host__ __device__ virtual bool hit(Ray r, IntersectRecord &colideRec) = 0;
 };
 
 class Triangle :public Model {
@@ -22,7 +22,7 @@ public:
     __host__ __device__ ~Triangle() = default;
     __host__ __device__ Triangle(float3 a, float3 b, float3 c, float3 norm);
     __host__ __device__ Triangle(float3 p[3], float3 norm);
-    __host__ __device__  bool hit(Ray r, float3 &colidePos, curandState *state);
+    __host__ __device__  bool hit(Ray r, IntersectRecord &colideRec);
 
 
 private:

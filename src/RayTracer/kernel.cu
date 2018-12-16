@@ -3,6 +3,7 @@
 #define NUM 16
 #define MAX_DEPTH 10
 #define SAMPLE 4
+#define WARP_SIZE 32
 
 #include <glut/gl3w.h>
 #include <Windows.h>
@@ -157,6 +158,8 @@ __global__ void test(cudaSurfaceObject_t surface)
     int y = idx / WIDTH;
     int x = idx % WIDTH;
 
-    float4 data = make_float4((float) x / WIDTH, (float) y / HEIGHT, time, 1.0f);
+    float4 data = make_float4((float) x / WIDTH, (float) y / HEIGHT, 0.0f, 1.0f);
+
+
     surf2Dwrite(data, surface, x * sizeof(float4), y);
 }

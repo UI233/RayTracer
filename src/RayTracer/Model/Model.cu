@@ -11,7 +11,9 @@ __host__ __device__ Triangle::Triangle(float3 a, float3 b, float3 c, float3 norm
     pos[2] = c;
 }
 
-__host__ __device__  bool  Triangle::hit(Ray r, float3 &colidePos, curandState *state) {
+__host__ __device__  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
+
+    colideRec.t = -1.0f;
 
     float3 ab, ac, ap, norm, e, qp;
     float t;
@@ -30,6 +32,9 @@ __host__ __device__  bool  Triangle::hit(Ray r, float3 &colidePos, curandState *
     float w = -dot(ab, e);
     if (w < 0.0f || v + w > d) return false;
     t /= d;
-    colidePos = r.getPos(t);
+
+    colideRec.t = t;
+    colideRec.normal = norm;
+    colideRec.pos = r.getPos(t);
     return true;
 }
