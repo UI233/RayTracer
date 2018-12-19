@@ -5,7 +5,6 @@
 #define CUDA_FUNC __host__ __device__
 #endif
 #include "helper_math.h"
- 
 class Ray
 {
 public:

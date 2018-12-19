@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
 bool renderScene(bool changed)
 {
-    test <<< WIDTH, HEIGHT >>> (texture_surface, 0);
+    test <<< WIDTH, HEIGHT >>> (texture_surface);
     auto error = cudaDeviceSynchronize();
 
     display();

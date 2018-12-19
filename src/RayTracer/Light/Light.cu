@@ -1,8 +1,7 @@
 #include "Light.cuh"
 
-
 CUDA_FUNC PointLight::PointLight(const float3 &position, const float3 &color) : pos(position), illum(color) {}
-CUDA_FUNC float3 PointLight::lightIllumi(Model &scene, IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const 
+CUDA_FUNC float3 PointLight::lightIllumi(Scene &scene, IntersectRecord &ref, Ray *wi, float2 sample) const 
 {
     *wi = Ray(pos, ref.pos - pos);
 
@@ -20,7 +19,7 @@ CUDA_FUNC float3 PointLight::lightIllumi(Model &scene, IntersectRecord &ref, Ray
 
 DirectionalLight::DirectionalLight(const float3 &direction, const float3 &color) : dir(normalize(direction)), illum(color) {}
 
-float3 DirectionalLight::lightIllumi(Model &scene, IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const
+float3 DirectionalLight::lightIllumi(Scene &scene, IntersectRecord &ref, Ray *wi, float2 sample) const
 {
     *wi = Ray(ref.pos - dir * 10000.0f, dir);
 
