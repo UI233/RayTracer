@@ -1,5 +1,5 @@
-﻿#define HEIGHT 100
-#define WIDTH 100
+﻿#define HEIGHT 200
+#define WIDTH 200
 #define NUM 16
 #define MAX_DEPTH 10
 #define SAMPLE 4
@@ -116,6 +116,7 @@ GLuint initGL()
 GLFWwindow* glEnvironmentSetup()
 {
     glfwInit();
+    
 
     GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "test", NULL, NULL);
     glfwMakeContextCurrent(window);

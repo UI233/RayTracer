@@ -6,14 +6,21 @@
     <CudaCompile Include="Matrix\Matrix.cu" />
     <CudaCompile Include="Model\Model.cu" />
     <CudaCompile Include="Ray\Ray.cu" />
+    <CudaCompile Include="Material\material.cu" />
+    <CudaCompile Include="Light\Light.cu" />
+    <CudaCompile Include="Ray\Ray.cuh" />
+    <CudaCompile Include="Scene\Scene.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper_math.h" />
     <ClInclude Include="Camera\Camera.cuh" />
     <ClInclude Include="Matrix\Matrix.cuh" />
     <ClInclude Include="Model\Model.cuh" />
-    <ClInclude Include="Ray\Ray.cuh" />
     <ClInclude Include="Shader\myShader.h" />
+    <ClInclude Include="Material\material.cuh" />
+    <ClInclude Include="Light\Light.cuh" />
+    <ClInclude Include="Sampler\Sampler.cuh" />
+    <ClInclude Include="Scene\Scene.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\glut\src\gl3w.c" />
