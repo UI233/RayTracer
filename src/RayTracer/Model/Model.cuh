@@ -50,7 +50,7 @@ public:
 	 CUDA_FUNC Triangle(const float3 p[3], const float3 norm[3]);
 	 CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
      Triangle& operator =(const Triangle& plus);
-     CUDA_FUNC float3 interpolatePosition(float3 sample);
+     CUDA_FUNC float3 interpolatePosition(float3 sample) const;
 
 private:
     float3 pos[3];

@@ -6,11 +6,11 @@ public:
     CUDA_FUNC  Scene() = default;
     CUDA_FUNC ~Scene() = default;
     CUDA_FUNC bool hit(Ray &r, IntersectRecord &rec) const;
-    CUDA_FUNC Light* sampleOneLight(curandState *state) const;
+    __device__ Light* sampleOneLight(curandState *state) const;
     //Load the scene to GPU
     __host__ bool initializeScene(int light_size[], int model_size[],  PointLight *pointl, DirectionalLight *dril
     , TriangleLight *tril, Triangle *tri, Mesh *mesh);
-    CUDA_FUNC float3 getIllumi(Light *light, IntersectRecord &ref) const;
+    CUDA_FUNC float3 getIllumi(Light *light, IntersectRecord &ref, float2 sample = make_float2(0.0f, 0.0f)) const;
 
 private:
     int light_sz[light::TYPE_NUM];

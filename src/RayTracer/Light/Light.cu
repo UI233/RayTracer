@@ -19,19 +19,33 @@ float3 DirectionalLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sampl
     return illum;
 }
 
-CUDA_FUNC float3 PointLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
+//CUDA_FUNC float3 PointLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
+//{
+//    return pos - pos0;
+//}
+//
+//CUDA_FUNC float3 DirectionalLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
+//{
+//    return dir;
+//}
+//
+//CUDA_FUNC float3 TriangleLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
+//{
+//    static float3 pos;
+//    pos = tri.interpolatePosition(make_float3(sample, 1.0f - sample.x - sample.y));
+//    return pos - pos0;
+//}
+
+
+//Incompleted
+CUDA_FUNC float3 TriangleLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample) const
 {
-    return pos - pos0;
+    float3 pos = tri.interpolatePosition(make_float3(sample, 1.0f - sample.x - sample.y));
+
+    return color;
 }
 
-CUDA_FUNC float3 DirectionalLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
+CUDA_FUNC bool TriangleLight::hit(Ray &r, IntersectRecord &rec)
 {
-    return dir;
-}
-
-CUDA_FUNC float3 TriangleLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
-{
-    static float3 pos;
-    pos = tri.interpolatePosition(make_float3(sample, 1.0f - sample.x - sample.y));
-    return pos - pos0;
+    return tri.hit(r, rec);
 }

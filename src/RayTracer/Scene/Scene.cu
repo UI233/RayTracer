@@ -43,7 +43,7 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
     return true;
 }
 
-CUDA_FUNC Light* Scene::sampleOneLight(curandState *state) const
+__device__ Light* Scene::sampleOneLight(curandState *state) const
 {
     static unsigned int num, cnt;
     num = curand(state) % light_sz_all;
@@ -98,10 +98,14 @@ __host__ bool Scene::initializeScene(int light_size[], int model_size[], PointLi
     return error == cudaSuccess;
 }
 
-CUDA_FUNC float3 Scene::getIllumi(Light *light, IntersectRecord &rec) const
+//Incompleted
+CUDA_FUNC float3 Scene::getIllumi(Light *light, IntersectRecord &rec, float2 sample) const
 {
-    static Ray r;
-    static float3 direction;
-
-    direction = light->getDir();
+    Ray r;
+    float3 direction, color;
+    float dis;
+    color = light->lightIllumi(rec, &r, sample);
+    dis = length(direction);
+    
+    return color;
 }  
