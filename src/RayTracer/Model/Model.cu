@@ -63,8 +63,6 @@ __host__  bool Mesh::readFile(char * path) {
 	vector<float3> vNorm;
 	vector<vector<int3>> vFace;
 	if (!file) {
-		//	cerr << "Error::ObjLoader, could not open obj file:"
-			//	<< path << " for reading." << endl;
 		return false;
 	}
 	string line;
@@ -189,6 +187,76 @@ __host__  bool Mesh::readFile(char * path) {
 	return true;
 }
 
-__host__ void mhr() {
-	printf("dnmd");
+
+CUDA_FUNC  bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
+	for (int i = 0; i < number; i++) {
+		if (meshTable[i].hit(r, colideRec)) {
+			return true;
+		}
+	}
+	return false;
 }
+
+CUDA_FUNC Quadratic::Quadratic(float3 Coefficient, int Type) {
+	coefficient = Coefficient;
+	type = Type;
+	if (Type == Sphere) {
+		if (!(coefficient.x == coefficient.y && coefficient.x == coefficient.z)) {
+			return;
+		}
+	}
+}
+	
+CUDA_FUNC bool Quadratic::setHeight(float Height) {
+	if (type == Sphere)
+		height = Height;
+	else
+		return false;
+	return true;
+}
+CUDA_FUNC float3 Quadratic::getCenter() {
+	return float3{ transformation.v[0][3],transformation.v[1][3],transformation.v[2][3] };
+}
+CUDA_FUNC float Quadratic::getRadius(){
+	if (type == Sphere) {
+		return (1/coefficient.x);
+	}
+}
+
+
+CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
+	if (type == Sphere) {
+		float3 center = getCenter();
+		float3 oc = r.getOrigin() - center;
+		float dotOCD = dot(r.getDir(), oc);
+
+		if (dotOCD > 0)
+			return false;
+
+		float dotOC = dot(oc, oc);
+		float discriminant = dotOCD * dotOCD - dotOC + getRadius()*getRadius();
+		float t0, t1;
+		if (discriminant < 0)
+			return false;
+		else if (discriminant < FLOAT_EPISLON)
+			t0 = t1 = -dotOCD;
+		else {
+			discriminant = sqrt(discriminant);
+			t0 = -dotOCD - discriminant;
+			t1 = -dotOCD + discriminant;
+			if (t0 < 0)
+				t0 = t1;
+		}
+		colideRec.t = t0;
+		colideRec.pos = r.getPos(t0);
+		colideRec.normal = colideRec.pos - center;
+		colideRec.normal = colideRec.normal / sqrt(dot(colideRec.normal, colideRec.normal));
+		return true;	
+	} 
+	else {
+		
+		                               
+	}
+}
+
+
