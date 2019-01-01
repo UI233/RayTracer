@@ -105,7 +105,8 @@
     <ClInclude Include="Matrix\Matrix.cuh" />
     <ClInclude Include="Model\Model.cuh" />
     <CudaCompile Include="Ray\Ray.cuh" />
-    <CudaCompile Include="Scene\Scene.cuh" />
+    <ClInclude Include="Sampler\Sampler.cuh" />
+    <ClInclude Include="Scene\Scene.cuh" />
     <ClInclude Include="Shader\myShader.h" />
   </ItemGroup>
   <ItemGroup>

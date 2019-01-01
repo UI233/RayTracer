@@ -1,6 +1,5 @@
-#ifndef SCENE_H
-#define SCENE_H
-#include "../Ray/Ray.cuh"
+#pragma once
+#include "../Light/Light.cuh"
 class Scene
 {
 public:
@@ -9,6 +8,5 @@ public:
 
     CUDA_FUNC bool hit(Ray &r, IntersectRecord &rec) const;
 
-    float3 boundary_min, boundary_max;
+private:
 };
-#endif // !SCENE_H
