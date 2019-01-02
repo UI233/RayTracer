@@ -267,3 +267,11 @@ CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
 }
 
 
+CUDA_FUNC float Triangle::area() const
+{
+    float3 rpos[3];
+    for (int i = 0; i < 3; i++)
+        rpos[i] = transformation(pos[i]);
+
+    return length(cross(rpos[2] - rpos[0], rpos[1] - rpos[0]));
+}

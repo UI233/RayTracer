@@ -3,6 +3,7 @@
 #define MODEL_H
 
 #include "../Ray/Ray.cuh"
+#include "../Material/Material.cuh"
 #include "../Matrix/Matrix.cuh"
 #include "helper_math.h"
 #include "cuda_runtime.h"
@@ -28,16 +29,33 @@ namespace model
     {
         TRIAGNLE,
         MESH,
-        SPHERE,
-        CYLINDER,
+        Quadratic,
         TYPE_NUM
     };
 }
 
+namespace material
+{
+    enum MATERIAL_TYPE
+    {
+        LAMBERTIAN,
+        MATERIAL_NUM
+    };
+
+    union material_union
+    {
+        Lambertian l;
+    };
+}
+
+
 class Model {
 public:
      virtual ~Model() = default;
+     Model() = default;
 	 CUDA_FUNC virtual bool hit(Ray r, IntersectRecord &colideRec) = 0;
+     CUDA_FUNC virtual float area() const = 0;
+private:
 };
 
 class Triangle :public Model {
@@ -49,6 +67,7 @@ public:
 	 CUDA_FUNC Triangle(float3 p[3], float3 norm[3]);
 	 CUDA_FUNC Triangle(const float3 p[3], const float3 norm[3]);
 	 CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
+     CUDA_FUNC float area() const override;
      Triangle& operator =(const Triangle& plus);
      CUDA_FUNC float3 interpolatePosition(float3 sample) const;
 
