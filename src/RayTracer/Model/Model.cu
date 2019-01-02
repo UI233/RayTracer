@@ -1,4 +1,5 @@
 #include "Model.cuh"
+
 CUDA_FUNC Triangle::Triangle(float3 p[3], float3 norm[3]) {
     pos[0] = p[0];
     pos[1] = p[1];
@@ -36,7 +37,7 @@ CUDA_FUNC Triangle& Triangle::operator=(const Triangle& plus) {
 }
 CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 
-    colideRec.t = -1.0f;
+    //colideRec.t = -1.0f;
 
     float3 ab, ac, ap, norm, e, qp;
     float t;
@@ -56,9 +57,15 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
     if (w < 0.0f || v + w > d) return false;
     t /= d;
 
-    colideRec.t = t;
-    colideRec.normal = norm;
-    colideRec.pos = r.getPos(t);
+    if (t > FLOAT_EPISLON && t < colideRec.t)
+    {
+        colideRec.material = my_material;
+        colideRec.material_type = material_type;
+        colideRec.t = t;
+        colideRec.normal = norm;
+        colideRec.pos = r.getPos(t);
+    }
+
     return true;
 }
 
@@ -196,12 +203,11 @@ __host__  bool Mesh::readFile(char * path) {
 
 
 CUDA_FUNC  bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
-	for (int i = 0; i < number; i++) {
-		if (meshTable[i].hit(r, colideRec)) {
-			return true;
-		}
+    bool ishit = false;
+    for (int i = 0; i < number; i++) {
+        ishit |= meshTable[i].hit(r, colideRec);
 	}
-	return false;
+	return ishit;
 }
 
 CUDA_FUNC Quadratic::Quadratic(float3 Coefficient, int Type) {
@@ -254,11 +260,15 @@ CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
 			if (t0 < 0)
 				t0 = t1;
 		}
-		colideRec.t = t0;
-		colideRec.pos = r.getPos(t0);
-		colideRec.normal = colideRec.pos - center;
-		colideRec.normal = colideRec.normal / sqrt(dot(colideRec.normal, colideRec.normal));
-		return true;	
+        if (t0 > FLOAT_EPISLON && t0 < colideRec.t)
+        {
+            colideRec.material = my_material;
+            colideRec.material_type = material_type;
+            colideRec.t = t0;
+            colideRec.pos = r.getPos(t0);
+            colideRec.normal = normalize(colideRec.pos - center);
+            return true;
+        }
 	} 
 	else {
 		
@@ -274,4 +284,26 @@ CUDA_FUNC float Triangle::area() const
         rpos[i] = transformation(pos[i]);
 
     return length(cross(rpos[2] - rpos[0], rpos[1] - rpos[0]));
+}
+
+__host__ bool Model::setUpMaterial(material::MATERIAL_TYPE t, Material *mat)
+{
+    size_t num;
+    switch (t)
+    {
+    case material::LAMBERTIAN:
+        num = sizeof(Lambertian);
+        break;
+    case material::MATERIAL_NUM:
+        //break;
+    default:
+        num = 0;
+        return false;
+    }
+
+    material_type = t;
+    auto error =  cudaMalloc(&my_material, num);
+    error = cudaMemcpy(my_material, mat, num, cudaMemcpyHostToDevice);
+
+    return error == cudaSuccess;
 }

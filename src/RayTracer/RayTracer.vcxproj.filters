@@ -21,6 +21,7 @@
     <ClInclude Include="Light\Light.cuh" />
     <ClInclude Include="Sampler\Sampler.cuh" />
     <ClInclude Include="Scene\Scene.cuh" />
+    <ClInclude Include="Ray\IntersectionRecord.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\glut\src\gl3w.c" />

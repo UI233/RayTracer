@@ -5,6 +5,7 @@
 #include "../Ray/Ray.cuh"
 #include "../Material/Material.cuh"
 #include "../Matrix/Matrix.cuh"
+#include "../Ray/IntersectionRecord.cuh"
 #include "helper_math.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -55,7 +56,11 @@ public:
      Model() = default;
 	 CUDA_FUNC virtual bool hit(Ray r, IntersectRecord &colideRec) = 0;
      CUDA_FUNC virtual float area() const = 0;
-private:
+     __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *);
+protected:
+    //
+    material::MATERIAL_TYPE material_type;
+    Material *my_material;
 };
 
 class Triangle :public Model {
@@ -70,7 +75,6 @@ public:
      CUDA_FUNC float area() const override;
      Triangle& operator =(const Triangle& plus);
      CUDA_FUNC float3 interpolatePosition(float3 sample) const;
-
 private:
     float3 pos[3];
     float3 normal[3];
@@ -114,7 +118,7 @@ private:
 	float height;
 	mat4 transformation;
 	CUDA_FUNC float3 getCenter();
-	CUDA_FUNC float getRadius();
+    CUDA_FUNC float getRadius();
 };
 
 #endif // !MODEL_H

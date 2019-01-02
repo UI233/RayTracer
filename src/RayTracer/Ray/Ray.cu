@@ -15,6 +15,3 @@ CUDA_FUNC float3 Ray::getOrigin() const
 {
     return origin;
 }
-
-IntersectRecord::IntersectRecord(const float3 &p, const float3 &n, const Ray &r, const float &dis) 
-    : pos(p), normal(n), t(dis), wo(r) {}

@@ -5,6 +5,7 @@
 #define CUDA_FUNC __host__ __device__
 #endif
 #include "helper_math.h"
+
 class Ray
 {
 public:
@@ -19,19 +20,8 @@ private:
     float3 origin;
     float3 direction;
     //Make the class aligned to 32 byte
-    float2 dummy;
+    int : 8;
 };
 
-class IntersectRecord
-{
-public:
-    CUDA_FUNC IntersectRecord() = default;
-    CUDA_FUNC ~IntersectRecord() = default;
-    CUDA_FUNC IntersectRecord(const float3 &p, const float3 &n, const Ray &r, const float &dis);
-
-    float3 pos, normal;
-    float t;
-    Ray wo;
-};
 
 #endif

@@ -38,3 +38,5 @@ src/RayTracer/.vs/RayTracer/v15/.suo
 src/RayTracer/x64/Debug/vc141.idb
 src/RayTracer/x64/Debug/RayTracer.lib
 src/RayTracer/x64/Debug/vc141.idb
+src/RayTracer/x64/Debug/vc141.idb
+*.idb
