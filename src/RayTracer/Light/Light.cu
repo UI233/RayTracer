@@ -1,51 +1,68 @@
 #include "Light.cuh"
 
-CUDA_FUNC PointLight::PointLight(const float3 &position, const float3 &color) : pos(position), illum(color) {}
+CUDA_FUNC PointLight::PointLight(const float3 &position, const float3 &color) : pos(position), illum(color), Light(true) {}
 CUDA_FUNC float3 PointLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample) const 
 {
     *wi = Ray(pos, ref.pos - pos);
 
-    float t1 = length(ref.pos - pos);
-
+    //float t1 = length(ref.pos - pos);
+    ref.pdf_light = 1.0f;
     return illum / fmaxf(0.001f, dot(ref.pos - pos, ref.pos - pos));
 }
 
-DirectionalLight::DirectionalLight(const float3 &direction, const float3 &color) : dir(normalize(direction)), illum(color) {}
+CUDA_FUNC float PointLight::getPower(float3 bound_length) const
+{
+    return 4.0f * M_PI * length(illum);
+}
+
+DirectionalLight::DirectionalLight(const float3 &direction, const float3 &color) : dir(normalize(direction)), illum(color), Light(true) {}
 
 float3 DirectionalLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample) const
 {
     *wi = Ray(ref.pos - dir * 10000.0f, dir);
-
+    ref.pdf_light = 1.0f;
     return illum;
 }
 
-//CUDA_FUNC float3 PointLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
-//{
-//    return pos - pos0;
-//}
-//
-//CUDA_FUNC float3 DirectionalLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
-//{
-//    return dir;
-//}
-//
-//CUDA_FUNC float3 TriangleLight::getDir(float3 pos0 = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const
-//{
-//    static float3 pos;
-//    pos = tri.interpolatePosition(make_float3(sample, 1.0f - sample.x - sample.y));
-//    return pos - pos0;
-//}
+CUDA_FUNC float DirectionalLight::getPower(float3 bound_length) const
+{
+    return length(illum) * dot(bound_length, bound_length) * 0.25f * M_PI;
+}
 
+CUDA_FUNC TriangleLight::TriangleLight(const Triangle& triangle, const float3& light_color, bool two) : tri(triangle), illum(light_color), two_side(two),
+Light(false){}
 
 //Incompleted
 CUDA_FUNC float3 TriangleLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample) const
 {
-    float3 pos = tri.interpolatePosition(make_float3(sample, 1.0f - sample.x - sample.y));
+    float sq_x = sqrtf(sample.x);
+    float3 tri_sample = make_float3(1 - sq_x, sample.y * sq_x, 0);
+    tri_sample.z = 1.0f - tri_sample.x - tri_sample.y;
+    float3 pos = tri.interpolatePosition(tri_sample);
 
-    return color;
+    if (wi == nullptr)
+        return BLACK;
+    else *wi = Ray(pos, ref.pos - pos);
+
+    ref.pdf_light = 1.0f / tri.area();
+    return illum;
 }
+
 
 CUDA_FUNC bool TriangleLight::hit(Ray &r, IntersectRecord &rec)
 {
-    return tri.hit(r, rec);
+    float t1 = rec.t;
+    tri.hit(r, rec);
+    if (rec.t > 0.0001f && rec.t < 100000.0f && rec.t < t1)
+    {
+        rec.isLight = true;
+        rec.light = this;
+        return true;
+    }
+    else return false;
+}
+
+CUDA_FUNC float TriangleLight::getPower(float3 bound_lenght) const
+{
+    return length(illum) * tri.area() * M_PI * (two_side ? 2.0f : 1.0f);
 }

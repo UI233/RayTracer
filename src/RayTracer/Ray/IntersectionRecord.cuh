@@ -1,3 +1,4 @@
+#pragma once
 #include "../Material/Material.cuh"
 #ifndef INFINITY
 #define INFINITY 1000000.0f
@@ -15,14 +16,15 @@ public:
     mat4 transformation;
     float t;
     Ray wo;
+    void* light;
     float pdf_light, pdf_surface;
     Material *material;
     bool isLight;
     int material_type;
 
     //Transform the r from local space to world space
-    Ray spawnRay(Ray &r)
+    Ray spawnRay(const Ray &r)
     {
-        
+
     }
 };

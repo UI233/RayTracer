@@ -5,13 +5,13 @@
 #define MAXN 0xffffffffu
 
 
-CUDA_FUNC float3 Lambertian::f(Ray &wo, Ray &wi)const
+CUDA_FUNC float3 Lambertian::f(const float3 &wo, const float3 &wi)const
 {
 
-    return  dot(wo.getDir(), wi.getDir()) > 0 ? color * INV_PI : make_float3(0.0f, 0.0f, 0.0f);
+    return  dot(wo, wi) > 0 ? color * INV_PI : make_float3(0.0f, 0.0f, 0.0f);
 }
 
-CUDA_FUNC float3 Lambertian::sample_f(Ray &wo, Ray *wi, float *pdf, const float2 &sample) const
+CUDA_FUNC float3 Lambertian::sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const
 {
     if (pdf == nullptr || wi == nullptr)
         return make_float3(0.0f);
@@ -19,7 +19,7 @@ CUDA_FUNC float3 Lambertian::sample_f(Ray &wo, Ray *wi, float *pdf, const float2
     float theta = sample.x * 2.0f * M_PI, phi = sample.y * M_PI_2;
     float sinPhi = sin(phi), cosPhi = cos(phi);
 
-    *wi = Ray(make_float3(0.0f), make_float3(sin(theta) * sinPhi, cosPhi, cos(theta) * sinPhi));
+    *wi = make_float3(sin(theta) * sinPhi, cosPhi, cos(theta) * sinPhi);
     *pdf = PDF(wo, *wi);
 
     return f(wo, *wi);
@@ -31,7 +31,7 @@ CUDA_FUNC bool Lambertian::isSpecular() const
 }
 
 
-CUDA_FUNC float Lambertian::PDF(Ray &wo, Ray &wi) const
+CUDA_FUNC float Lambertian::PDF(const float3 &wo, const float3 &wi) const
 {
-    return wi.getDir().y * INV_PI;
+    return wi.y * INV_PI;
 }

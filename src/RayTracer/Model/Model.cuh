@@ -3,7 +3,7 @@
 #define MODEL_H
 
 #include "../Ray/Ray.cuh"
-#include "../Material/Material.cuh"
+#include "../Material/Object.cuh"
 #include "../Matrix/Matrix.cuh"
 #include "../Ray/IntersectionRecord.cuh"
 #include "helper_math.h"
@@ -36,19 +36,6 @@ namespace model
     };
 }
 
-namespace material
-{
-    enum MATERIAL_TYPE
-    {
-        LAMBERTIAN,
-        MATERIAL_NUM
-    };
-
-    union material_union
-    {
-        Lambertian l;
-    };
-}
 
 
 class Model {

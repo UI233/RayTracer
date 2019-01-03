@@ -28,7 +28,7 @@ CUDA_FUNC Triangle::Triangle(float3 a, float3 b, float3 c, float3 norm[3]) {
 
 CUDA_FUNC float3 Triangle::interpolatePosition(float3 sample) const
 {
-    return sample.x * pos[0] + sample.y * pos[1] + sample.z * pos[2];
+    return transformation(sample.x * pos[0] + sample.y * pos[1] + sample.z * pos[2]);
 }
 
 CUDA_FUNC Triangle& Triangle::operator=(const Triangle& plus) {

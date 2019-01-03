@@ -6,6 +6,10 @@
 #endif
 #include "helper_math.h"
 
+#ifndef BLACK
+#define BLACK (make_float3(0.0f, 0.0f, 0.0f))
+#endif // !BLACK
+
 class Ray
 {
 public:
