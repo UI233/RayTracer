@@ -38,11 +38,14 @@ CUDA_FUNC Triangle& Triangle::operator=(const Triangle& plus) {
 CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 
     //colideRec.t = -1.0f;
+	float3 ta=transformation(pos[0]), tb=transformation(pos[1]), tc= transformation(pos[2]);
 
     float3 ab, ac, ap, norm, e, qp;
     float t;
-    ab = pos[1] - pos[0];
-    ac = pos[2] - pos[0];
+    //ab = pos[1] - pos[0];
+    //ac = pos[2] - pos[0];
+	ab = tb - ta;
+	ac = tc - ta;
     qp = -r.getDir();
     norm = cross(ab, ac);
     float d = dot(qp, norm);
@@ -62,8 +65,9 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
         colideRec.material = my_material;
         colideRec.material_type = material_type;
         colideRec.t = t;
-        colideRec.normal = norm;
+        colideRec.normal = normalize(transpose(inverse(transformation))(norm));
         colideRec.pos = r.getPos(t);
+		colideRec.isLight = false;
     }
 
     return true;
@@ -270,6 +274,7 @@ CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
             colideRec.t = t0;
             colideRec.pos = r.getPos(t0);
             colideRec.normal = normalize(colideRec.pos - center);
+			colideRec.isLight = false;
             return true;
         }
 	} 
