@@ -91,8 +91,8 @@ CUDA_FUNC float3 mat4::operator()(const float3 &vec3) const
 }
 
 CUDA_FUNC Ray mat4::operator()(const Ray &r) const
-{
-    return Ray((*this)(r.getOrigin()), (*this)(r.getDir()));
+{  
+    return Ray((*this)(r.getOrigin()), make_float3((*this)(make_float4(r.getDir(),0.0f))));
 }
 
 CUDA_FUNC mat4 operator *(const mat4 &a, const mat4 &b)
@@ -233,4 +233,14 @@ CUDA_FUNC mat4 inverse(const mat4 &m)
     Inverse *= 1.0f / determinant;
 
     return Inverse;
+}
+
+CUDA_FUNC mat4 transpose(const mat4 &m)
+{
+    mat4 res;
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            res.v[i][j] = m.v[j][i];
+
+    return res;
 }

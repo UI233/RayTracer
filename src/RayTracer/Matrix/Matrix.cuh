@@ -39,6 +39,7 @@ CUDA_FUNC mat4 translation(const float3 &offset);
 CUDA_FUNC mat4 scale(const float3 &offset);
 //perspective projection where the field of view is fov(rad)
 CUDA_FUNC mat4 perspective(float fov, float ratio, float near, float far);
+CUDA_FUNC mat4 transpose(const mat4 &mat);
 #endif // !MATRIX_H
 
 
