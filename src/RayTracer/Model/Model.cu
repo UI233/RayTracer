@@ -204,8 +204,10 @@ __host__  bool Mesh::readFile(char * path) {
 
 CUDA_FUNC  bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
     bool ishit = false;
+    Triangle t;
     for (int i = 0; i < number; i++) {
-        ishit |= meshTable[i].hit(r, colideRec);
+        t = meshTable[i];
+        ishit |= t.hit(r, colideRec);
 	}
 	return ishit;
 }
@@ -227,13 +229,14 @@ CUDA_FUNC bool Quadratic::setHeight(float Height) {
 		return false;
 	return true;
 }
-CUDA_FUNC float3 Quadratic::getCenter() {
+CUDA_FUNC float3 Quadratic::getCenter() const{
 	return float3{ transformation.v[0][3],transformation.v[1][3],transformation.v[2][3] };
 }
-CUDA_FUNC float Quadratic::getRadius(){
+CUDA_FUNC float Quadratic::getRadius() const{
 	if (type == Sphere) {
 		return (1/coefficient.x);
 	}
+    return 0.0f;
 }
 
 

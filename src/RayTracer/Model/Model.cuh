@@ -18,7 +18,8 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-
+#define _USE_MATH_DEFINES
+#include <math.h>
 #ifndef FLOAT_EPISLON
 #define FLOAT_EPISLON (1e-4)
 #endif
@@ -73,7 +74,7 @@ public:
 	 CUDA_FUNC Triangle(const float3 p[3], const float3 norm[3]);
 	 CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
      CUDA_FUNC float area() const override;
-     Triangle& operator =(const Triangle& plus);
+     CUDA_FUNC Triangle& operator =(const Triangle& plus);
      CUDA_FUNC float3 interpolatePosition(float3 sample) const;
 private:
     float3 pos[3];
@@ -93,6 +94,7 @@ public:
 	CUDA_FUNC int size() {
         return number;
     }
+    CUDA_FUNC float area() const override { return 0.0f; };
 private:
     Triangle* meshTable;
     int number = 0;
@@ -111,14 +113,16 @@ public:
 	CUDA_FUNC Quadratic(float3 Coefficient,int Type);
 	CUDA_FUNC bool setHeight(float Height);
 	CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
-
+    CUDA_FUNC float area() const override {
+        return 0.0f;
+    }
 private:
 	float3 coefficient;
 	int type;
 	float height;
 	mat4 transformation;
-	CUDA_FUNC float3 getCenter();
-    CUDA_FUNC float getRadius();
+	CUDA_FUNC float3 getCenter() const;
+    CUDA_FUNC float getRadius() const;
 };
 
 #endif // !MODEL_H
