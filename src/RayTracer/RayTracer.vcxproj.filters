@@ -11,6 +11,7 @@
     <CudaCompile Include="Ray\Ray.cuh" />
     <CudaCompile Include="Scene\Scene.cu" />
     <CudaCompile Include="Material\Object.cu" />
+    <CudaCompile Include="Ray\IntersectionRecord.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper_math.h" />

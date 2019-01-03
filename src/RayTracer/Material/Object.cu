@@ -66,7 +66,7 @@ CUDA_FUNC float3 Material::world2Local(const float3 & world) const
 {
     static float3 B;
     B = cross(tangent, normal);
-    return dot(world, normal) * normal + dot(world, tangent) * tangent + dot(world, B) * B;
+    return make_float3(dot(world, tangent) , dot(world, normal) ,dot(world, B));
 }
 
 CUDA_FUNC float3 Material::local2World(const float3 & local) const

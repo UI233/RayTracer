@@ -1,15 +1,25 @@
 #pragma once
-#include "../Material/Material.cuh"
-#ifndef INFINITY
-#define INFINITY 1000000.0f
+#ifndef INTERSECTIONRECORD_H
+#define INTERSECTIONRECORD_H
+#include "../Material/Object.cuh"
+#include "../Matrix/Matrix.cuh"
+#ifndef INF
+#define INF 1000000.0f
 #endif // !INFINITY
+
+CUDA_FUNC float findFloatUp(float v);
+
+CUDA_FUNC float findFloatDown(float v);
+
+CUDA_FUNC float3 offsetFromPoint(float3 origin, float3 normal, float3 error_bound, float3 d);
+
 
 class IntersectRecord
 {
 public:
     CUDA_FUNC IntersectRecord() = default;
     CUDA_FUNC ~IntersectRecord() = default;
-    CUDA_FUNC IntersectRecord(const float3 &p, const float3 &n, const Ray &r, const float &dis = INFINITY) : pos(p), normal(n), t(dis), wo(r) {};
+    CUDA_FUNC IntersectRecord(const float3 &p, const float3 &n, const Ray &r, const float &dis = INF) : pos(p), normal(n), t(dis), wo(r) {};
 
     float3 pos, normal;
     //World2Local
@@ -23,8 +33,12 @@ public:
     int material_type;
 
     //Transform the r from local space to world space
-    Ray spawnRay(const Ray &r)
+    CUDA_FUNC Ray spawnRay(const float3 &w)
     {
+        float3 ro = offsetFromPoint(pos, normal, make_float3(0.0001f, 0.0001f, 0.0001f), w);
 
+        return Ray(ro, w);
     }
 };
+
+#endif

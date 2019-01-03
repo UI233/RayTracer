@@ -95,6 +95,7 @@
     <CudaCompile Include="Material\Object.cu" />
     <CudaCompile Include="Matrix\Matrix.cu" />
     <CudaCompile Include="Model\Model.cu" />
+    <CudaCompile Include="Ray\IntersectionRecord.cu" />
     <CudaCompile Include="Ray\Ray.cu" />
     <CudaCompile Include="Scene\Scene.cu" />
   </ItemGroup>

@@ -184,7 +184,7 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
 
     res = BLACK;
     if (!isBlack(f) && !blocked)
-    {
+    {  
         if (light->isDelta)
         {
             color = fabs(dot(rec.normal, r.getDir())) * color * f / rec.pdf_light;
@@ -199,36 +199,41 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
     }
     float3 wi;
     
+    float weight = 1.0f;
     if (!light->isDelta)
     {
         f = this_material->sample_f(wo.getDir(), &wi, &rec.pdf_surface, sample_BRDF);
         f *= fabs(dot(rec.normal, wi));
-        r = Ray(r.getOrigin(), wi);
+        r = rec.spawnRay(wi);
         //r = rec.spawnRay(r);
 
         rec.t = 100000.0f;
         rec.light = nullptr;
         if (!isBlack(f) && rec.pdf_surface > 0.00001f)
         {
-            float pdf = light->PDF(rec, wi);
-            if (fabs(pdf) > 0.00001f)
+            if (!this_material->isSpecular())
             {
-                float3 l;
-                if (hit(r, rec))
-                {
-                    if (rec.light == (void*)light)
-                        l = light ->getLe(Ray(r.getOrigin(), -wi) , &rec);
-                    else
-                    {
-                        Light *a =(Light*) rec.light;
-                        l = a->getLe(r, &rec);
-                    }
-
-                    res += l * f * PowerHeuristic(rec.pdf_surface, rec.pdf_light) / rec.pdf_surface;
-                }
+                float pdf = light->PDF(rec, wi);
+                if (fabs(pdf) > 0.00001f)
+                    return res;
+                weight = PowerHeuristic(rec.pdf_surface, pdf);
             }
 
-            return res;
+            float3 l;
+            if (hit(r, rec))
+            {
+                if (rec.light == (void*)light)
+                    l = light ->getLe(Ray(r.getOrigin(), -wi) , &rec);
+                else
+                {
+                    Light *a =(Light*) rec.light;
+                    if(a)
+                        l = a->getLe(r, &rec);
+                }
+
+                res += l * f * weight / rec.pdf_surface;
+            }
+            //return res;
         }
     }
 
