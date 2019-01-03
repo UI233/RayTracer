@@ -7,7 +7,8 @@
 
 CUDA_FUNC float3 Lambertian::f(Ray &wo, Ray &wi)const
 {
-    return color * INV_PI;
+
+    return  dot(wo.getDir(), wi.getDir()) > 0 ? color * INV_PI : make_float3(0.0f, 0.0f, 0.0f);
 }
 
 CUDA_FUNC float3 Lambertian::sample_f(Ray &wo, Ray *wi, float *pdf, const float2 &sample) const
@@ -19,7 +20,7 @@ CUDA_FUNC float3 Lambertian::sample_f(Ray &wo, Ray *wi, float *pdf, const float2
     float sinPhi = sin(phi), cosPhi = cos(phi);
 
     *wi = Ray(make_float3(0.0f), make_float3(sin(theta) * sinPhi, cosPhi, cos(theta) * sinPhi));
-    *pdf = cosPhi * INV_PI;
+    *pdf = PDF(wo, *wi);
 
     return f(wo, *wi);
 }
@@ -27,4 +28,10 @@ CUDA_FUNC float3 Lambertian::sample_f(Ray &wo, Ray *wi, float *pdf, const float2
 CUDA_FUNC bool Lambertian::isSpecular() const
 {
     return false;
+}
+
+
+CUDA_FUNC float Lambertian::PDF(Ray &wo, Ray &wi) const
+{
+    return wi.getDir().y * INV_PI;
 }
