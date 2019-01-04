@@ -140,15 +140,13 @@ __host__ bool Scene::initializeScene(int light_size[],
     error = cudaMemcpy(quad, quadratic, sizeof(Quadratic) * model_size[2], cudaMemcpyHostToDevice);
 
     model_sz_all = 0;
-    for (int i = 0; i < model::TYPE_NUM; i++)
-        model_sz_all += model_size[i];
     
     light_sz_all = 0;
     light_power = BLACK;
     for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
     {
-        light_sz_all += light_sz[i];
-        
+        light_sz_all += light_size[i];
+        light_sz[i] = light_size[i];
         int j;
         switch (light::LIGHT_TYPE(i))
         {
@@ -169,7 +167,11 @@ __host__ bool Scene::initializeScene(int light_size[],
         }
     }
 
-
+    for (int i = 0; i < (unsigned int)model::TYPE_NUM; i++)
+    {
+        model_sz_all += model_size[i];
+        model_sz[i] = model_size[i];
+    }
     return error == cudaSuccess;
 }
 

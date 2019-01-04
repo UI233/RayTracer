@@ -47,6 +47,7 @@ public:
      __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *);
 	 __host__ bool setUpTransformation(mat4 Transformation) {
 		 transformation = Transformation;
+         return true;
 	 }
 protected:
     //
