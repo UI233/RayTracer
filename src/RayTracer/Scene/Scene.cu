@@ -119,7 +119,7 @@ __host__ bool Scene::initializeScene(int light_size[], int model_size[], PointLi
     error = cudaMemcpy(pointl, point_light, sizeof(PointLight) * light_size[0], cudaMemcpyHostToDevice);
     error = cudaMemcpy(dirl, dir_light, sizeof(DirectionalLight) * light_size[1], cudaMemcpyHostToDevice);
     error = cudaMemcpy(tril, tri_light, sizeof(TriangleLight) * light_size[2], cudaMemcpyHostToDevice);
-
+	
     error = cudaMemcpy(tri, triangles, sizeof(Triangle) * model_size[0], cudaMemcpyHostToDevice);
     error = cudaMemcpy(mesh, meshes, sizeof(Mesh) * model_size[1], cudaMemcpyHostToDevice);
     error = cudaMemcpy(quad, quadratic, sizeof(Quadratic) * model_size[2], cudaMemcpyHostToDevice);

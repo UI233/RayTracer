@@ -7,6 +7,7 @@ CUDA_FUNC Triangle::Triangle(float3 p[3], float3 norm[3]) {
     normal[0] = norm[0];
     normal[1] = norm[1];
     normal[2] = norm[2];
+	my_material = new Material;
 }
 CUDA_FUNC Triangle::Triangle(const float3 p[3], const float3 norm[3]) {
     pos[0] = p[0];
@@ -15,6 +16,7 @@ CUDA_FUNC Triangle::Triangle(const float3 p[3], const float3 norm[3]) {
     normal[0] = norm[0];
     normal[1] = norm[1];
     normal[2] = norm[2];
+	my_material = new Material;
 }
 CUDA_FUNC Triangle::Triangle(float3 a, float3 b, float3 c, float3 norm[3]) {
     pos[0] = a;
@@ -23,6 +25,7 @@ CUDA_FUNC Triangle::Triangle(float3 a, float3 b, float3 c, float3 norm[3]) {
     normal[0] = norm[0];
     normal[1] = norm[1];
     normal[2] = norm[2];
+	my_material = new Material;
 }
 
 
@@ -46,6 +49,15 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
     //ac = pos[2] - pos[0];
 	ab = tb - ta;
 	ac = tc - ta;
+
+	float3 dUV1 = { 1.0f,0.0f,0.0f }, dUV2 = { 0.0f,1.0f,0.0f };
+	float2 dUVy = { 1.0f,-0.0f };
+	float f = 1.0f / length(cross(dUV1, dUV2));
+	float3 tangent;
+	tangent.x = f * dot(dUVy, float2 { ab.x, ab.x });
+	tangent.y = f * dot(dUVy, float2 { ab.y, ab.y });
+	tangent.z = f * dot(dUVy, float2 { ab.z, ab.z });
+	
     qp = -r.getDir();
     norm = cross(ab, ac);
     float d = dot(qp, norm);
@@ -68,6 +80,7 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
         colideRec.normal = normalize(transpose(inverse(transformation))(norm));
         colideRec.pos = r.getPos(t);
 		colideRec.isLight = false;
+		my_material->setUpNormal(colideRec.normal, normalize(tangent));
     }
 
     return true;
