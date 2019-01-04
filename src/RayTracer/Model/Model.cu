@@ -7,7 +7,6 @@ CUDA_FUNC Triangle::Triangle(float3 p[3], float3 norm[3]) {
     normal[0] = norm[0];
     normal[1] = norm[1];
     normal[2] = norm[2];
-	my_material = new Material;
 }
 CUDA_FUNC Triangle::Triangle(const float3 p[3], const float3 norm[3]) {
     pos[0] = p[0];
@@ -16,7 +15,6 @@ CUDA_FUNC Triangle::Triangle(const float3 p[3], const float3 norm[3]) {
     normal[0] = norm[0];
     normal[1] = norm[1];
     normal[2] = norm[2];
-	my_material = new Material;
 }
 CUDA_FUNC Triangle::Triangle(float3 a, float3 b, float3 c, float3 norm[3]) {
     pos[0] = a;
@@ -25,7 +23,6 @@ CUDA_FUNC Triangle::Triangle(float3 a, float3 b, float3 c, float3 norm[3]) {
     normal[0] = norm[0];
     normal[1] = norm[1];
     normal[2] = norm[2];
-	my_material = new Material;
 }
 
 
@@ -81,9 +78,10 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
         colideRec.pos = r.getPos(t);
 		colideRec.isLight = false;
 		my_material->setUpNormal(colideRec.normal, normalize(tangent));
+		return true;
     }
 
-    return true;
+    return false;
 }
 
 __host__  bool Mesh::readFile(char * path) {
@@ -226,6 +224,12 @@ CUDA_FUNC  bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
         t = meshTable[i];
         ishit |= t.hit(r, colideRec);
 	}
+	
+	if (ishit) {
+		colideRec.material = my_material;
+		colideRec.material_type = material_type;
+	}
+
 	return ishit;
 }
 
@@ -292,9 +296,11 @@ CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
         }
 	} 
 	else {
-		
+		//TODO-Cylinder.
 		                               
 	}
+
+	return false;
 }
 
 

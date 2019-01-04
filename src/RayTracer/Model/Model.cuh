@@ -45,10 +45,14 @@ public:
 	 CUDA_FUNC virtual bool hit(Ray r, IntersectRecord &colideRec) = 0;
      CUDA_FUNC virtual float area() const = 0;
      __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *);
+	 __host__ bool setUpTransformation(mat4 Transformation) {
+		 transformation = Transformation;
+	 }
 protected:
     //
     material::MATERIAL_TYPE material_type;
     Material *my_material;
+	mat4 transformation;
 };
 
 class Triangle :public Model {
@@ -67,7 +71,6 @@ private:
     float3 pos[3];
     float3 normal[3];
     float dummy[4];       //Make the memory cost for per Triangle a 2^n byte size
-	mat4 transformation;
 };
 
 class Mesh : public Model {
@@ -85,7 +88,6 @@ public:
 private:
     Triangle* meshTable;
     int number = 0;
-	mat4 transformation;
 };
 
 enum quadraticType {
@@ -107,7 +109,6 @@ private:
 	float3 coefficient;
 	int type;
 	float height;
-	mat4 transformation;
 	CUDA_FUNC float3 getCenter() const;
     CUDA_FUNC float getRadius() const;
 };
