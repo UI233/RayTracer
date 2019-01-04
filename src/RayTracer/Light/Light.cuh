@@ -24,7 +24,7 @@ public:
     CUDA_FUNC virtual ~Light() = default;
     CUDA_FUNC Light() = default;
     CUDA_FUNC Light(bool is) : isDelta(is) {}
-    CUDA_FUNC virtual float getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const = 0;
+    CUDA_FUNC virtual float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const = 0;
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     CUDA_FUNC virtual float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     CUDA_FUNC virtual float PDF(IntersectRecord rec, const float3 &wi)const { return 0.0f; };
@@ -39,7 +39,7 @@ public:
     CUDA_FUNC ~PointLight() = default;
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const override;
     CUDA_FUNC PointLight(const float3 &position, const float3 &color);
-    CUDA_FUNC float getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const;
+    CUDA_FUNC float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const;
     CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const override;
 private:
     float3 pos, illum;
@@ -51,7 +51,7 @@ public:
     CUDA_FUNC DirectionalLight() = default;
     CUDA_FUNC ~DirectionalLight() = default;
     CUDA_FUNC DirectionalLight(const float3 &direction, const float3 &color);
-    CUDA_FUNC float getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const;
+    CUDA_FUNC float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const;
     //CUDA_FUNC float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const override;
     CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const override;
 
@@ -65,7 +65,7 @@ public:
     CUDA_FUNC TriangleLight() = default;
     CUDA_FUNC ~TriangleLight() = default;
     CUDA_FUNC TriangleLight(const Triangle& triangle, const float3& light_color, bool two = false);
-    CUDA_FUNC float getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const;
+    CUDA_FUNC float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const;
     CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const override;
     CUDA_FUNC bool hit(Ray &r, IntersectRecord &rec);
     CUDA_FUNC float PDF(IntersectRecord rec, const float3 &wi)  const{ 

@@ -98,7 +98,7 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
         }
     }
 
-    return obj ? light_power / obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface) : make_float3(0.0f, 0.0f, 0.0f);
+    return obj ? light_power / obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface) : BLACK;
 
 }
 
@@ -129,7 +129,7 @@ __host__ bool Scene::initializeScene(int light_size[], int model_size[], PointLi
         model_sz_all += model_size[i];
     
     light_sz_all = 0;
-    light_power = 0.0f;
+    light_power = BLACK;
     for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
     {
         light_sz_all += light_sz[i];

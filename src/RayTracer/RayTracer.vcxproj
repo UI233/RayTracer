@@ -89,6 +89,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="Camera\Camera.cu" />
+    <CudaCompile Include="core\PathTracer.cu" />
     <CudaCompile Include="kernel.cu" />
     <CudaCompile Include="Light\Light.cu" />
     <CudaCompile Include="Material\material.cu" />
@@ -101,6 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera\Camera.cuh" />
+    <ClInclude Include="core\PathTracer.cuh" />
     <ClInclude Include="helper_math.h" />
     <ClInclude Include="Light\Light.cuh" />
     <ClInclude Include="Material\material.cuh" />

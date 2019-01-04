@@ -12,6 +12,7 @@
     <CudaCompile Include="Scene\Scene.cu" />
     <CudaCompile Include="Material\Object.cu" />
     <CudaCompile Include="Ray\IntersectionRecord.cu" />
+    <CudaCompile Include="core\PathTracer.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper_math.h" />
@@ -25,6 +26,7 @@
     <ClInclude Include="Scene\Scene.cuh" />
     <ClInclude Include="Ray\IntersectionRecord.cuh" />
     <ClInclude Include="Material\Object.cuh" />
+    <ClInclude Include="core\PathTracer.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\glut\src\gl3w.c" />

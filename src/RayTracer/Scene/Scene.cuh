@@ -23,7 +23,7 @@ private:
     int light_sz[light::TYPE_NUM];
     int model_sz[model::TYPE_NUM];
     int light_sz_all, model_sz_all;
-    float light_power;
+    float3 light_power;
 
     DirectionalLight *dirl;
     PointLight *pointl;

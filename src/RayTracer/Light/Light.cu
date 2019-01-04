@@ -10,9 +10,9 @@ CUDA_FUNC float3 PointLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 s
     return illum / fmaxf(0.001f, dot(ref.pos - pos, ref.pos - pos));
 }
 
-CUDA_FUNC float PointLight::getPower(float3 bound_length) const
+CUDA_FUNC float3 PointLight::getPower(float3 bound_length) const
 {
-    return 4.0f * M_PI * length(illum);
+    return 4.0f * M_PI * illum;
 }
 
 DirectionalLight::DirectionalLight(const float3 &direction, const float3 &color) : dir(normalize(direction)), illum(color), Light(true) {}
@@ -24,9 +24,9 @@ float3 DirectionalLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sampl
     return illum;
 }
 
-CUDA_FUNC float DirectionalLight::getPower(float3 bound_length) const
+CUDA_FUNC float3 DirectionalLight::getPower(float3 bound_length) const
 {
-    return length(illum) * dot(bound_length, bound_length) * 0.25f * M_PI;
+    return illum * dot(bound_length, bound_length) * 0.25f * M_PI;
 }
 
 CUDA_FUNC TriangleLight::TriangleLight(const Triangle& triangle, const float3& light_color, bool two) : tri(triangle), illum(light_color), two_side(two),
@@ -63,7 +63,7 @@ CUDA_FUNC bool TriangleLight::hit(Ray &r, IntersectRecord &rec)
     else return false;
 }
 
-CUDA_FUNC float TriangleLight::getPower(float3 bound_lenght) const
+CUDA_FUNC float3 TriangleLight::getPower(float3 bound_lenght) const
 {
-    return length(illum) * tri.area() * M_PI * (two_side ? 2.0f : 1.0f);
+    return illum * tri.area() * M_PI * (two_side ? 2.0f : 1.0f);
 }

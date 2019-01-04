@@ -3,12 +3,19 @@
 
 namespace material
 {
+    enum BXDF_PROP
+    {
+        REFLECATION = 1,
+        TRANSMISSION = 2,
+        SPECULAR = 4
+    };
+
     enum MATERIAL_TYPE
     {
-        LAMBERTIAN,
-        FRESNEL,
-        GGX,
-        MATERIAL_NUM
+        LAMBERTIAN = 1,
+        FRESNEL = 7, // 111
+        GGX = 9,//1001
+        MATERIAL_NUM = 3
     };
 }
 
@@ -21,21 +28,28 @@ public:
     };
     Material() :brdfs(nullptr) {};
     Material(float3 N, float3 T) : normal(T), tangent(T) {};
-    CUDA_FUNC virtual float3 f(const float3 &wo, const float3 &wi) const;
+    CUDA_FUNC float3 f(const float3 &wo, const float3 &wi) const;
     //emited ray, incident ray, possibility for wi, the 2-D sample points between [0, 1]
     CUDA_FUNC  float3 sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const;
     CUDA_FUNC float PDF(const float3 &wo, const float3 &wi) const;
-    CUDA_FUNC float3 world2Local(const const float3 &) const;
-    CUDA_FUNC float3 local2World(const const float3 &) const;
+    CUDA_FUNC float3 world2Local(const  float3 &) const;
+    CUDA_FUNC float3 local2World(const  float3 &) const;
     CUDA_FUNC bool isSpecular() const
     {
-        return m_type  & material::FRESNEL;
+        return m_type  & material::SPECULAR;
+    }
+
+    CUDA_FUNC bool isTrans() const
+    {
+        return m_type & material::TRANSMISSION;
     }
 
     CUDA_FUNC bool setUpNormal(float3 N, float3 T)
     {
         normal = N;
         tangent = T;
+
+        return true;
     }
 
     float eta;

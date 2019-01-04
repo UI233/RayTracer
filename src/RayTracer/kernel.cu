@@ -12,7 +12,8 @@
 #include <vector_functions.hpp>
 #include <cuda_gl_interop.h>
 #include <device_functions.h>
-#include "Model/Model.cuh"
+#include "Scene/Scene.cuh"
+#include "core/PathTracer.cuh"
 #include "Camera/Camera.cuh"
 #include <glut/glfw3.h>
 #include "Shader/myShader.h"
