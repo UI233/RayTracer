@@ -15,7 +15,7 @@ public:
     __device__ float3 sampleOneLight(IntersectRecord &rec, float2 sample_light, float2 sample_surface, int sample_num) const;
     //Load the scene to GPU
     __host__ bool initializeScene(int light_size[], int model_size[],  PointLight *pointl, DirectionalLight *dril
-    , TriangleLight *tril, Triangle *tri, Mesh *mesh, Quadratic *qudratic);
+    , TriangleLight *tril, Triangle *tri, Mesh *mesh, Quadratic *qudratic, int material_type[], Material *mat);
     CUDA_FUNC float3 evaluateDirectLight(Light *light, IntersectRecord &ref, float2 sample_light = make_float2(0.0f, 0.0f), 
         float2 sample_BRDF = make_float2(0.0f, 0.0f)) const;
 

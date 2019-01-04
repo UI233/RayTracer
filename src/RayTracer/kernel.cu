@@ -162,6 +162,5 @@ __global__ void test(cudaSurfaceObject_t surface)
 
     float4 data = make_float4((float) x / WIDTH, (float) y / HEIGHT, 0.0f, 1.0f);
 
-
     surf2Dwrite(data, surface, x * sizeof(float4), y);
 }
