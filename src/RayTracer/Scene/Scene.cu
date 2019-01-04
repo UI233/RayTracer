@@ -102,14 +102,17 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
 
 }
 
-__host__ bool Scene::initializeScene(int light_size[], int model_size[], PointLight *point_light, 
-    DirectionalLight *dir_light, TriangleLight *tri_light, Triangle *triangles, Mesh *meshes, Quadratic *quadratic, int mat_type[], Material *mat)
+__host__ bool Scene::initializeScene(int light_size[], 
+    int model_size[], PointLight *point_light, 
+    DirectionalLight *dir_light, TriangleLight *tri_light, 
+    Triangle *triangles, Mesh *meshes, 
+    Quadratic *quadratic, int mat_type[], Material *mat)
 {
     cudaError_t error;
-    
+
     error = cudaMalloc(&pointl, sizeof(PointLight) * light_size[0]);
     error = cudaMalloc(&dirl, sizeof(DirectionalLight) * light_size[1]);
-    error = cudaMalloc(&pointl, sizeof(TriangleLight) * light_size[2]);
+    error = cudaMalloc(&tril, sizeof(TriangleLight) * light_size[2]);
     //error = cudaMalloc(&pointl, sizeof(PointLight) * light_size[3]);
     
     error = cudaMalloc(&tri, sizeof(Triangle) * model_size[0]);
@@ -124,6 +127,9 @@ __host__ bool Scene::initializeScene(int light_size[], int model_size[], PointLi
     for (int count = 0; count < model_size[2]; count++, idx++)
         quadratic[count].setUpMaterial((material::MATERIAL_TYPE)mat_type[idx], mat + idx);
 
+    int k = light::TRIANGLE_LIGHT;
+    for(int count = 0; count < light_size[k];count++,idx++)
+        tri_light[count].setUpMaterial((material::MATERIAL_TYPE)mat_type[idx], mat + idx);
 
     error = cudaMemcpy(pointl, point_light, sizeof(PointLight) * light_size[0], cudaMemcpyHostToDevice);
     error = cudaMemcpy(dirl, dir_light, sizeof(DirectionalLight) * light_size[1], cudaMemcpyHostToDevice);

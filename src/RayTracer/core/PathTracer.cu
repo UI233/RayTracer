@@ -1,13 +1,13 @@
 #include "PathTracer.cuh"
 #ifndef MAX_DEPTH
-#define MAX_DEPTH 24
+#define MAX_DEPTH 12
 #endif // !MAX_DEPTH
 #ifndef maxComp(vec)
 #define maxComp(vec) ((vec).x > (vec).y ? ((vec).x > (vec).z ? (vec).x : (vec).z) : ((vec).y > (vec).z ? (vec).y : (vec).z))
 #endif // !maxComp(x)
 
 
-__device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> sampler_scatter,  StratifiedSampler<TWO> sampler_light,StratifiedSampler<ONE> sampler_p,curandState *state)
+__device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sampler_scatter,  StratifiedSampler<TWO> &sampler_light,StratifiedSampler<ONE> &sampler_p,curandState *state)
 {
     IntersectRecord rec;
     bool ishit, specular_bounce = false;
@@ -38,10 +38,10 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> sampler
                     }
                 }
             }
-        }
-        else
-        {
-            //Add Light from environment, infinite area light for example
+            else
+            {
+                //ToDo : Add Light from environment, infinite area light for example
+            }
         }
 
         if (!ishit || bounces > MAX_DEPTH)
@@ -73,7 +73,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> sampler
         if (bounces > 3 && max_comp < 1.0f )
         {
             q = (1.0f - max_comp) > 0.5 ? (1.0f - max_comp) : 0.5;
-            if (sampler_p(cnt_q++) < q)
+            if (sampler_p(cnt_q++, state) < q)
                 break;
             beta /= 1.0f - q;
         }

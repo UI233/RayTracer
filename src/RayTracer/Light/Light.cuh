@@ -77,9 +77,11 @@ public:
         if (two_side)
             return illum;
         else return dot(r, rec->normal) > 0 ? illum : BLACK;
-    }; 
-    //CUDA_FUNC float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const override;
-
+    };
+    __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *mat)
+    {
+        return tri.setUpMaterial(type, mat);
+    }
 private:
     Triangle tri;
     float3 illum;

@@ -8,6 +8,7 @@ enum SAMPLER_DIMENSION
 {
     ONE,
     TWO,
+    TWO_FOR_SHARED,
     ZERO
 };
 
@@ -131,5 +132,58 @@ public:
 
 private:
     float *data;
+    int size;
+};
+
+template<>
+class StratifiedSampler<TWO_FOR_SHARED>
+{
+public:
+    CUDA_FUNC StratifiedSampler() :size(0) {}
+
+    __device__ StratifiedSampler(unsigned int sz, curandState *state) : size(sz)
+    {
+        float invSamples = 1.0f / sz;
+        int idx = -1;
+        float samplev;
+        for (int i = 0; i < sz; i++)
+        {
+            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            data[++idx] = fminf(0.9999f, samplev);
+            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            data[++idx] = fminf(0.9999f, samplev);
+        }
+
+        float temp;
+        for (int i = 0; i < sz; i++)
+        {
+            idx = i + (int)(((float)curand(state) / maxn) * (sz - i));
+            temp = data[2 * i];
+            data[2 * i] = data[2 * idx];
+            data[2 * idx] = temp;
+
+            idx = i + (int)(((float)curand(state) / maxn) * (sz - i));
+            temp = data[2 * i + 1];
+            data[2 * i + 1] = data[2 * idx + 1];
+            data[2 * idx + 1] = temp;
+        }
+    }
+
+    CUDA_FUNC ~StratifiedSampler() = default;
+
+    __device__ float2 operator()(int i, curandState *state = NULL) const
+    {
+        if (i >= 0 && i < size)
+            return make_float2(data[i * 2], data[i * 2 + 1]);
+        else
+        {
+            if (state)
+                return make_float2((float)curand(state) / maxn, (float)curand(state) / maxn);
+            else return make_float2(0.0f, 0.0f);
+        }
+    }
+
+private:
+    float data[32];
     int size;
 };

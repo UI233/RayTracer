@@ -8,8 +8,8 @@ CUDA_FUNC Camera::Camera(const float3 &pos, const float3 &lookat, const float &f
     pers(perspective(fov, (float)resolution.y / resolution.x, near, far)),
     resolution(res)
 {
-    float3 right = cross(front, up);
-
+    float3 right = normalize(cross(front, up));
+    up = normalize(cross(right, front));
     mat4 world2raster(
         right.x, right.y, right.z, -pos.x,
          up.x, up.y, up.z,-pos.y,
@@ -24,7 +24,7 @@ CUDA_FUNC Camera::Camera(const float3 &pos, const float3 &lookat, const float &f
     raster2world = inverse(world2raster);
 }
 
-CUDA_FUNC Ray Camera::generateRay(int x, int y, curandState *state)
+CUDA_FUNC Ray Camera::generateRay(int x, int y)
 {
     //float2 offset(sampler2D());
     //The direction of ray which computes the color of the pixel on (x,y)
