@@ -57,6 +57,7 @@ CUDA_FUNC bool TriangleLight::hit(Ray &r, IntersectRecord &rec)
     {
         rec.isLight = true;
         rec.light = this;
+        rec.light_type = (int)light::TRIANGLE_LIGHT;
         return true;
     }
     else return false;

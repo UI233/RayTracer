@@ -29,13 +29,16 @@ public:
     CUDA_FUNC float3 local2World(const const float3 &) const;
     CUDA_FUNC bool isSpecular() const
     {
-        return m_type == material::FRESNEL;
+        return m_type  & material::FRESNEL;
     }
+
     CUDA_FUNC bool setUpNormal(float3 N, float3 T)
     {
         normal = N;
         tangent = T;
     }
+
+    float eta;
 protected:
     float3 normal;
     float3 tangent;

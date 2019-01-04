@@ -72,11 +72,11 @@ public:
         return rec.t * rec.t / (tri.area() * fabs(dot(rec.normal , wi))); 
     };
 
-    CUDA_FUNC float3 getLe(Ray &r, IntersectRecord *rec = nullptr) const
+    CUDA_FUNC float3 getLe(const float3 &r, IntersectRecord *rec = nullptr) const
     {
         if (two_side)
             return illum;
-        else return dot(r.getDir(), rec->normal) > 0 ? illum : BLACK;
+        else return dot(r, rec->normal) > 0 ? illum : BLACK;
     }; 
     //CUDA_FUNC float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const override;
 

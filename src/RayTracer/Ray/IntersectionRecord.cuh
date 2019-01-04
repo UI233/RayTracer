@@ -27,18 +27,19 @@ public:
     float t;
     Ray wo;
     void* light;
+    int light_type;
     float pdf_light, pdf_surface;
     Material *material;
     bool isLight;
     int material_type;
 
-    //Transform the r from local space to world space
+    //Make sure that the light wounldn't reintersect the surface 
     CUDA_FUNC Ray spawnRay(const float3 &w)
     {
         float3 ro = offsetFromPoint(pos, normal, make_float3(0.0001f, 0.0001f, 0.0001f), w);
-
         return Ray(ro, w);
     }
+
 };
 
 #endif

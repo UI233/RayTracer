@@ -98,7 +98,7 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
         }
     }
 
-    return obj ? light_sz_all * inv_light_power * obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface) : make_float3(0.0f, 0.0f, 0.0f);
+    return obj ? light_power / obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface) : make_float3(0.0f, 0.0f, 0.0f);
 
 }
 
@@ -129,7 +129,7 @@ __host__ bool Scene::initializeScene(int light_size[], int model_size[], PointLi
         model_sz_all += model_size[i];
     
     light_sz_all = 0;
-    inv_light_power = 0.0f;
+    light_power = 0.0f;
     for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
     {
         light_sz_all += light_sz[i];
@@ -139,22 +139,21 @@ __host__ bool Scene::initializeScene(int light_size[], int model_size[], PointLi
         {
         case light::POINT_LIGHT:
             for (j = 0; j < light_sz[i]; j++)
-                inv_light_power += point_light[j].getPower();
+                light_power += point_light[j].getPower();
             break;
         case light::DIR_LIGHT:
             for (j = 0; j < light_sz[i]; j++)
-                inv_light_power += dir_light[j].getPower(bound2 - bound1);
+                light_power += dir_light[j].getPower(bound2 - bound1);
             break;
         case light::TRIANGLE_LIGHT:
             for (j = 0; j < light_sz[i]; j++)
-                inv_light_power += tri_light[j].getPower();
+                light_power += tri_light[j].getPower();
             break;
         default:
             break;
         }
     }
 
-    inv_light_power = 1.0f / inv_light_power;
 
     return error == cudaSuccess;
 }
@@ -176,8 +175,8 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
     IntersectRecord light_rec;
     hit(r, light_rec);
 
-    Ray wo;
-    float3 f = this_material -> f(rec.wo.getDir(), -r.getDir());
+    //Ray wo;
+    float3 f = this_material -> f(-rec.wo.getDir(), r.getDir());
 
     if (light_rec.t < distance - 0.001f)
         blocked = true;
@@ -191,7 +190,7 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
         }
         else
         {
-            rec.pdf_surface = this_material->PDF(wo.getDir(), r.getDir());
+            rec.pdf_surface = this_material->PDF(-rec.wo.getDir(), r.getDir());
             color = fabs(dot(rec.normal, r.getDir())) * color * f
                 *  PowerHeuristic(rec.pdf_surface, rec.pdf_light) / rec.pdf_light;
         }
@@ -202,14 +201,14 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
     float weight = 1.0f;
     if (!light->isDelta)
     {
-        f = this_material->sample_f(wo.getDir(), &wi, &rec.pdf_surface, sample_BRDF);
+        f = this_material->sample_f(-rec.wo.getDir(), &wi, &rec.pdf_surface, sample_BRDF);
         f *= fabs(dot(rec.normal, wi));
         r = rec.spawnRay(wi);
         //r = rec.spawnRay(r);
 
         rec.t = 100000.0f;
         rec.light = nullptr;
-        if (!isBlack(f) && rec.pdf_surface > 0.00001f)
+        if (!isBlack(f) && rec.pdf_surface > 0.0001f)
         {
             if (!this_material->isSpecular())
             {

@@ -36,8 +36,20 @@ public:
         data = (float*)malloc(sz * sizeof(float));
 
         float step = 1.0f / sz;
+        //Create Strarified samples
         for (int i = 0; i < sz; i++)
             data[i] = (i + (float)curand(state) / maxn) * step;
+        
+        int idx;
+        float tmp;
+        //random shuffle
+        for (int i = 0; i < sz; i++)
+        {
+            idx = i + (int)(((float)curand(state) / maxn) * (sz - i));
+            tmp = data[idx];
+            data[idx] = i;
+            data[i] = tmp;
+        }
     }
 
     CUDA_FUNC ~StratifiedSampler()
