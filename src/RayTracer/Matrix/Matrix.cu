@@ -232,7 +232,7 @@ CUDA_FUNC mat4 inverse(const mat4 &m)
 
     Inverse *= 1.0f / determinant;
 
-    return Inverse;
+    return transpose(Inverse);
 }
 
 CUDA_FUNC mat4 transpose(const mat4 &m)
