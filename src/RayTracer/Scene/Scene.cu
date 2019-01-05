@@ -188,14 +188,16 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
 
 
     Material *this_material = rec.material;
-
     IntersectRecord light_rec;
+
+    //r = rec.spawnRay(r.getDir());
     hit(r, light_rec);
+    light_rec.wo = r;
 
     //Ray wo;
-    float3 f = this_material -> f(-rec.wo.getDir(), r.getDir());
+    float3 f = this_material -> f(-rec.wo.getDir(), -r.getDir());
 
-    if (light_rec.t < distance - 0.001f)
+    if (light_rec.t < distance - 0.1f)
         blocked = true;
 
     res = BLACK;

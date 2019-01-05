@@ -14,17 +14,17 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
     int cnt_scatter = 0, cnt_light = 0, cnt_q = 0;//Count the number of samples for sampler
 
     float pdf;
-    float3 le,wi;
+    float3 le,wi;   
     float3 beta = make_float3(1.0f, 1.0f, 1.0f), rrbeta;
     float3 res = BLACK;
     float2 sample_light, sample_scatter;//Store the samples
     float q, max_comp;
     float etaScale = 1.0f;
-    
+    //rec.t = 1000000.0f;
     for (int bounces = 0; ; bounces++)
     {
         ishit = scene.hit(r, rec);
-
+        rec.wo = r;
         if(!bounces  || specular_bounce)
         {
             if (ishit)
@@ -46,7 +46,8 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
 
         if (!ishit || bounces > MAX_DEPTH)
             break;
-        specular_bounce = rec.material_type & material::FRESNEL;
+
+        specular_bounce = rec.material_type & material::SPECULAR;
         //Sample one light to light the intersection point
         //won't sample for perferctly specular surface cause only the wi direction would be accounted 
         if (!specular_bounce)
@@ -64,6 +65,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
         }
         //use brdf to sample new direction
         le = rec.material->sample_f(-r.getDir(), &wi, &pdf, sample_scatter);
+
         beta *= le * fabs(dot(r.getDir(), rec.normal)) / pdf;
         r = rec.spawnRay(wi);
 

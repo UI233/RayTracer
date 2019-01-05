@@ -1,14 +1,16 @@
 #define _USE_MATH_DEFINES
 #include "material.cuh"
 #include <cmath>
+#include <cstdio>
 #define INV_PI 0.318309892f
 #define MAXN 0xffffffffu
 
 
 CUDA_FUNC float3 Lambertian::f(const float3 &wo, const float3 &wi)const
 {
-
-    return  dot(wo, wi) > 0 ? color * INV_PI : make_float3(0.0f, 0.0f, 0.0f);
+    //if(wo.y >0.0f && wi.y > 0.0f)
+    //    printf("%f %f\n", wo.y, wi.y);
+    return  (wo.y > 0.0f && wi.y > 0.0f) ? color * INV_PI : make_float3(0.0f, 0.0f, 0.0f);
 }
 
 CUDA_FUNC float3 Lambertian::sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const

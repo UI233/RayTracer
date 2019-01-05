@@ -1,5 +1,5 @@
 #include "Model.cuh"
-
+#define UP_VEC make_float3(0.0f, getRadius(), 0.0f)
 CUDA_FUNC Triangle::Triangle(float3 p[3], float3 norm[3]) {
     pos[0] = p[0];
     pos[1] = p[1];
@@ -263,34 +263,64 @@ CUDA_FUNC float Quadratic::getRadius() const{
 
 CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
 	if (type == Sphere) {
-		float3 center = getCenter();
-		float3 oc = r.getOrigin() - center;
-		float dotOCD = dot(r.getDir(), oc);
+        float3 center = make_float3(0.0f, 0.0f, 0.0f);
+        mat4 inv = inverse(transformation);
+        float3 Lorigin = inv(r.getOrigin());
 
-		if (dotOCD > 0)
-			return false;
+        float4 L4dir = inv(make_float4(r.getDir(), 0));
+        float3 Ldir = normalize(make_float3(L4dir.x, L4dir.y, L4dir.z));
+        float3 oc = Lorigin - center;
+        float dotOCD = dot(Ldir, oc);
 
-		float dotOC = dot(oc, oc);
-		float discriminant = dotOCD * dotOCD - dotOC + getRadius()*getRadius();
-		float t0, t1;
-		if (discriminant < 0)
-			return false;
-		else if (discriminant < FLOAT_EPISLON)
-			t0 = t1 = -dotOCD;
-		else {
-			discriminant = sqrt(discriminant);
-			t0 = -dotOCD - discriminant;
-			t1 = -dotOCD + discriminant;
-			if (t0 < 0)
-				t0 = t1;
-		}
+        if (dotOCD > 0)
+            return false;
+
+        float dotOC = dot(oc, oc);
+        float discriminant = dotOCD * dotOCD - dotOC + getRadius()*getRadius();
+        float t0, t1;
+        if (discriminant < 0)
+            return false;
+        else if (discriminant < FLOAT_EPISLON)
+            t0 = t1 = -dotOCD;
+        else {
+            discriminant = sqrt(discriminant);
+            t0 = -dotOCD - discriminant;
+            t1 = -dotOCD + discriminant;
+            if (t0 < 0)
+                t0 = t1;
+        }
+        //Need to double-check
+        //float3 tangent = normalize(make_float3(transformation(make_float4((cross(cross(Ldir*t0 + Lorigin, make_float3(0.0f, 1.0f / , 0.0f)), Ldir*t0 + Lorigin)),0))));
+        //float3 normal = normalize(make_float3(transformation(make_float4(Ldir*t0 + Lorigin, 0))));
+        //float3 pos = transformation(Ldir*t0 + Lorigin);
+
+        float3 pos = Ldir * t0 + Lorigin;
+        float3 normal = normalize(make_float3(transformation(make_float4(pos, 0.0f))));
+        float3 tangent;
+        if (pos.x == 0.0f && pos.y == 0.0f)
+            tangent = make_float3(transformation(make_float4(0.0f, 0.0f, -1.0f, 0.0f)));
+        else tangent = cross(
+            normal,
+            cross(make_float3(transformation(make_float4(UP_VEC - pos, 0.0f))),
+                normal)
+            );
+
+        tangent = normalize(tangent);
+        pos = transformation(pos);
+
+        //if(t0 > 0.0f)
+         //   if (dot(normal, r.getDir()) < 0.0f)
+         //      printf("%f\n", dot(normal, r.getDir()));
+
         if (t0 > FLOAT_EPISLON && t0 < colideRec.t)
         {
+            //printf("hhh");
             colideRec.material = my_material;
             colideRec.material_type = material_type;
             colideRec.t = t0;
-            colideRec.pos = r.getPos(t0);
-            colideRec.normal = normalize(colideRec.pos - center);
+            colideRec.pos = pos;
+            colideRec.normal = normal;
+            colideRec.material->setUpNormal(normal, tangent);
 			colideRec.isLight = false;
             return true;
         }
@@ -327,10 +357,13 @@ __host__ bool Model::setUpMaterial(material::MATERIAL_TYPE t, Material *mat)
         num = 0;
         return false;
     }
-
+    //Todo:Bugs fucking here!
     material_type = t;
-    auto error =  cudaMalloc(&my_material, num);
-    error = cudaMemcpy(my_material, mat, num, cudaMemcpyHostToDevice);
+    Material tmp = *mat;
+    cudaMalloc(&tmp.brdfs, num);
+    cudaMemcpy(tmp.brdfs, mat->brdfs, num, cudaMemcpyHostToDevice);
+    auto error =  cudaMalloc(&my_material, sizeof(Material));
+    error = cudaMemcpy(my_material, &tmp, sizeof(Material), cudaMemcpyHostToDevice);
 
     return error == cudaSuccess;
 }

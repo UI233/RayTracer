@@ -53,9 +53,9 @@ public:
     }
 
     float eta;
+    BRDF *brdfs;
 protected:
     float3 normal;
     float3 tangent;
-    BRDF *brdfs;
     material::MATERIAL_TYPE m_type;
 };

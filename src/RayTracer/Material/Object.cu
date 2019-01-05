@@ -1,21 +1,22 @@
 #include "Object.cuh"
 CUDA_FUNC float3 Material::f(const float3 &wo, const float3 &wi) const
 {
+    float3 f = BLACK;
     if (m_type == material::LAMBERTIAN)
     {
         Lambertian tmp = *(Lambertian*)brdfs;
-        return tmp.f(world2Local(wo), world2Local(wi));
+        f = tmp.f(world2Local(wo), world2Local(wi));
     }
     else if (m_type == material::FRESNEL)
     {
-        return BLACK;
+
     }
     else if (m_type == material::GGX)
     {
 
     }
 
-    return BLACK;
+    return f;
 }
 
 CUDA_FUNC float3 Material::sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const
@@ -62,6 +63,7 @@ CUDA_FUNC float Material::PDF(const float3 &wo, const float3 &wi) const
     return 0.0f;
 }
 
+//The normal and tangant for sphere
 CUDA_FUNC float3 Material::world2Local(const float3 & world) const
 {
     static float3 B;
