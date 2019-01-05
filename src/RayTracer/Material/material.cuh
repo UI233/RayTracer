@@ -29,3 +29,12 @@ public:
 private:
     float3 color;
 };
+//
+//class GGX : public BRDF
+//{
+//public:
+//    CUDA_FUNC GGX() = default;
+//    CUDA_FUNC GGX(); // with parameter
+//    CUDA_FUNC ~GGX();
+//private:
+//};

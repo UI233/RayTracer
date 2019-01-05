@@ -35,6 +35,7 @@ CUDA_FUNC Triangle& Triangle::operator=(const Triangle& plus) {
     Triangle t1(plus.pos, plus.normal);
     return(t1);
 }
+
 CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 
     //colideRec.t = -1.0f;

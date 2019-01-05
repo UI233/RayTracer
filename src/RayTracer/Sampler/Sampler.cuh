@@ -71,6 +71,24 @@ public:
         }
     }
 
+    __device__  void regenerate(curandState *state)
+    {
+        float step = 1.0f / size;
+        //Create Strarified samples
+        for (int i = 0; i < size; i++)
+            data[i] = (i + (float)curand(state) / maxn) * step;
+
+        int idx;
+        float tmp;
+        //random shuffle
+        for (int i = 0; i < size; i++)
+        {
+            idx = i + (int)(((float)curand(state) / maxn) * (size - i));
+            tmp = data[idx];
+            data[idx] = i;
+            data[i] = tmp;
+        }
+    }
 private:
     float *data;
     int size;
@@ -130,6 +148,33 @@ public:
         }
     }
 
+    __device__ void regenerate(curandState *state)
+    {
+        float invSamples = 1.0f / size;
+        int idx = -1;
+        float samplev;
+        for (int i = 0; i < size; i++)
+        {
+            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            data[++idx] = fminf(0.9999f, samplev);
+            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            data[++idx] = fminf(0.9999f, samplev);
+        }
+
+        float temp;
+        for (int i = 0; i < size; i++)
+        {
+            idx = i + (int)(((float)curand(state) / maxn) * (size - i));
+            temp = data[2 * i];
+            data[2 * i] = data[2 * idx];
+            data[2 * idx] = temp;
+
+            idx = i + (int)(((float)curand(state) / maxn) * (size - i));
+            temp = data[2 * i + 1];
+            data[2 * i + 1] = data[2 * idx + 1];
+            data[2 * idx + 1] = temp;
+        }
+    }
 private:
     float *data;
     int size;
@@ -141,12 +186,12 @@ class StratifiedSampler<TWO_FOR_SHARED>
 public:
     CUDA_FUNC StratifiedSampler() :size(0) {}
 
-    __device__ StratifiedSampler(unsigned int sz, curandState *state) : size(sz)
+    __device__ StratifiedSampler( curandState *state) : size(32)
     {
-        float invSamples = 1.0f / sz;
+        float invSamples = 1.0f / 32.0f;
         int idx = -1;
         float samplev;
-        for (int i = 0; i < sz; i++)
+        for (int i = 0; i < 32; i++)
         {
             samplev = (i + (float)curand(state) / maxn) * invSamples;
             data[++idx] = fminf(0.9999f, samplev);
@@ -155,14 +200,14 @@ public:
         }
 
         float temp;
-        for (int i = 0; i < sz; i++)
+        for (int i = 0; i < 32; i++)
         {
-            idx = i + (int)(((float)curand(state) / maxn) * (sz - i));
+            idx = i + (int)(((float)curand(state) / maxn) * (32 - i));
             temp = data[2 * i];
             data[2 * i] = data[2 * idx];
             data[2 * idx] = temp;
 
-            idx = i + (int)(((float)curand(state) / maxn) * (sz - i));
+            idx = i + (int)(((float)curand(state) / maxn) * (32 - i));
             temp = data[2 * i + 1];
             data[2 * i + 1] = data[2 * idx + 1];
             data[2 * idx + 1] = temp;

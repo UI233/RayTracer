@@ -1,7 +1,7 @@
-﻿#define WIDTH 300
-#define HEIGHT 200
-#define WIDTH_PER_BLOCK  20
-#define HEIGHT_PER_BLOCK  18
+﻿#define WIDTH 800
+#define HEIGHT 600
+#define WIDTH_PER_BLOCK  80
+#define HEIGHT_PER_BLOCK  60
 #define NUM 16
 #define MAX_DEPTH 10
 #define SAMPLE 4
@@ -19,12 +19,14 @@
 #include "Shader/myShader.h"
 #include "core/PathTracer.cuh"
 #include "Ray/Ray.cuh"
+
 __constant__ Camera globalCam;
 curandState *state;
 float *data_tmp;
 Scene *sce;
 int *cnt;
 
+int thread_num = 10 * 10 * 32;
 __global__ void test(cudaSurfaceObject_t surface, Scene *scene, curandState *state, float* data_tmp, int *cnt);
 void display();
 __device__ void computeTexture();
@@ -67,12 +69,11 @@ bool renderScene(bool changed)
 {
     dim3 block_size;
 
-    block_size.x = 32;
-    block_size.y = 20;
+    block_size.x = WIDTH / WIDTH_PER_BLOCK;
+    block_size.y = HEIGHT / HEIGHT_PER_BLOCK;
     block_size.z = 1;
-    int num = 32 * 20 * 32;
     //ToDo: the state should be an array
-    test <<<HEIGHT , WIDTH>>> (texture_surface, sce, state, data_tmp, cnt);
+    test <<<block_size, 32>>> (texture_surface, sce, state, data_tmp, cnt);
     auto error = cudaDeviceSynchronize();
     //cudaDeviceSynchronize();
     display();
@@ -161,9 +162,9 @@ bool initCUDA(GLuint glTex)
     error = cudaCreateSurfaceObject(&texture_surface, &dsc);
     
     Camera cam(make_float3(0.0f, 0.0f, 0.0f), make_float3(0.0f, 0.0f, -1.0f), 2.0f, 1.00f, 100.0f,
-        make_int2(WIDTH, HEIGHT), make_float3(0.0f, 1.0f, 0.0f));
+        make_int2(WIDTH / 2, HEIGHT / 2), make_float3(0.0f, 1.0f, 0.0f));
 
-    cudaMalloc(&state, sizeof(curandState) * WIDTH * HEIGHT);
+    cudaMalloc(&state, sizeof(curandState) * thread_num);
     error = cudaMemcpyToSymbol(globalCam, &cam, sizeof(Camera));
 
     error = cudaMalloc(&data_tmp, sizeof(float) * HEIGHT * WIDTH * 3);
@@ -185,58 +186,66 @@ void display()
 
 __global__ void test(cudaSurfaceObject_t surface, Scene *scene, curandState *state, float* data_tmp, int *cnt)
 {
-    //__shared__ StratifiedSampler<TWO_FOR_SHARED> sampler;
-    if (blockIdx.x == 0 && threadIdx.x == 0)
+    __shared__ StratifiedSampler<TWO_FOR_SHARED> sampler;
+
+    int idx = (blockIdx.x * blockDim.y + blockIdx.y) * 32 + threadIdx.x;
+
+
+    //To do: use time to update the seed
+    curand_init(1774, idx,0, &state[idx]);
+
+    if (threadIdx.x == 0)
     {
-        ++*cnt;
-        printf("%d\n", *cnt);
+       sampler = StratifiedSampler<TWO_FOR_SHARED>(state + idx);
     }
-    int idx = WIDTH * blockIdx.x + threadIdx.x;
-    curand_init(1234, idx,0, &state[idx]);
 
     __syncthreads();
-   
     curandState *rstate = state + idx;
-
-   // if (threadIdx.x == 0)
-   //     sampler = StratifiedSampler<TWO_FOR_SHARED>(32, rstate);
-  //  __syncthreads();
 
     Ray r;
     float3 tmp;
-    int y = blockIdx.x, x = threadIdx.x;
-    float4 data;
+    int stx = blockIdx.x * WIDTH_PER_BLOCK, sty = blockIdx.y * HEIGHT_PER_BLOCK;
 
-    //x = stx + i, y = sty + j;
-    idx = idx * 3;
     StratifiedSampler<TWO> sampler_light(16, rstate);
     StratifiedSampler<TWO> sampler_surface(16, rstate);
     StratifiedSampler<ONE> p(8, rstate);
-    r = globalCam.generateRay(x, y);
 
-    //tmp = r.getDir();
-    tmp = pathTracer(r, *scene, sampler_surface, sampler_light, p, rstate);
-            
-   /* data_tmp[idx] += tmp.x;
-    data_tmp[idx + 1] += tmp.y;
-    data_tmp[idx + 2] += tmp.z;*/
-
-    float frac1 = (float)(*cnt - 1) / (float)(*cnt), inv_sample = 1.0f / *cnt;
-    data_tmp[idx] = data_tmp[idx] * frac1+ tmp.x * inv_sample;
-    data_tmp[idx + 1] = data_tmp[idx + 1] * frac1 + tmp.y * inv_sample;
-    data_tmp[idx + 2] = data_tmp[idx + 2] * frac1 + tmp.z * inv_sample;
-/*
-    float inv_sample = 1.0f / 32.0f;
-    if(threadIdx.x == 0)
-    for (int i = 0; i < WIDTH_PER_BLOCK; i++)
+    float2 offset = make_float2(0.0f, 0.0f) ;
+    int x, y;
+    for(int i = 0; i < WIDTH_PER_BLOCK; i++)
         for (int j = 0; j < HEIGHT_PER_BLOCK; j++)
         {
-            int x = stx + i, y = sty + j;
-            int idx = (y * WIDTH + x) * 3;
-*/
-    //data = make_float4(1.0f, 0.0f, 1.0f, 0.0f);//inv_sample * make_float4(data_tmp[idx], data_tmp[idx + 1], data_tmp[idx + 2], 0.0f);
-    surf2Dwrite(make_float4(data_tmp[idx], data_tmp[idx + 1] , data_tmp[idx + 2] ,1.0f), surface, x * sizeof(float4), y);
-     
+            offset = sampler(threadIdx.x);
+            r = globalCam.generateRay(i + stx + offset.x - WIDTH / 2, j + sty + offset.y - HEIGHT / 2);
+            tmp = pathTracer(r, *scene, sampler_surface, sampler_light, p, rstate);
+
+            idx = (j + sty) * WIDTH + i + stx;
+            idx = idx * 3;
+            data_tmp[idx] += tmp.x;
+            data_tmp[idx + 1] += tmp.y;
+            data_tmp[idx + 2] += tmp.z;
+
+            //sampler_surface.regenerate(rstate);
+           // sampler_light.regenerate(rstate);
+           // p.regenerate(rstate);
+        }
+    __syncthreads();
+
+    idx = 3 * (sty * WIDTH + stx);
+    //Write to Texture
+    if(threadIdx.x == 0)
+        for (int i = 0; i < WIDTH_PER_BLOCK; i++)
+            for (int j = 0; j < HEIGHT_PER_BLOCK; j++)
+            {
+                x = i + stx;
+                y = j + sty;
+                idx = y * WIDTH + x;
+                idx = idx * 3;
+                //Bug here: should take average value
+                surf2Dwrite(make_float4(data_tmp[idx] / 32.0f, 
+                    data_tmp[idx + 1] / 32.0f, data_tmp[idx + 2] / 32.0f, 1.0f), surface, sizeof(float4) * x , y);
+            }
+
 
 }
 
@@ -245,16 +254,16 @@ void test_for_initialize_scene()
     Scene scene;
     int lz[light::TYPE_NUM] = {1,0,0}, ms[model::TYPE_NUM] = {0,0,1};
     int mat_type[] = { material::LAMBERTIAN };
-    Lambertian lamb(make_float3(0.0f, 0.8f, 0.4f));
+    Lambertian lamb(make_float3(0.7f, 0.8f, 0.4f));
     Material m(&lamb, material::LAMBERTIAN);
     Quadratic q(make_float3(0.3f, 0.0f, 0.0f), Sphere);
     q.setUpTransformation(
-        mat4(1.0f, 0.0f, 0.0f, 15.0f,
-             0.0f, 1.0f, 0.0f, 15.0f,
+        mat4(1.0f, 0.0f, 0.0f, 0.0f,
+             0.0f, 1.0f, 0.0f, 0.0f,
             0.0f, 0.0f,1.0f, -10.0f,
             0.0f,0.0f,0.0f,1.0f)
     );
-    PointLight pl(make_float3(0.0f, 22.0f, 10.0f), make_float3(200.0, 250.0f, 200.0f));
+    PointLight pl(make_float3(-8.0f, 0.0f, 0.0f), make_float3(300.0, 350.0f, 300.0f));
 
     scene.initializeScene(
         lz, ms, &pl, nullptr, nullptr, nullptr, nullptr,
