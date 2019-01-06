@@ -1,6 +1,6 @@
 #include "PathTracer.cuh"
 #ifndef MAX_DEPTH
-#define MAX_DEPTH 12
+#define MAX_DEPTH 24
 #endif // !MAX_DEPTH
 #ifndef maxComp(vec)
 #define maxComp(vec) ((vec).x > (vec).y ? ((vec).x > (vec).z ? (vec).x : (vec).z) : ((vec).y > (vec).z ? (vec).y : (vec).z))
@@ -20,9 +20,10 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
     float2 sample_light, sample_scatter;//Store the samples
     float q, max_comp;
     float etaScale = 1.0f;
-    //rec.t = 1000000.0f;
+
     for (int bounces = 0; ; bounces++)
     {
+        rec.t = INF;
         ishit = scene.hit(r, rec);
         rec.wo = r;
         if(!bounces  || specular_bounce)
@@ -33,8 +34,9 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
                 {
                     if (rec.light_type == light::TRIANGLE_LIGHT)
                     {
-                        TriangleLight trl = *(TriangleLight*)rec.light;
-                        res += beta * trl.getLe(-r.getDir(), &rec);
+                        Light *light = scene.getIdxAreaLight(rec.lightidx);
+                        if(light)
+                            res += beta * light -> L(-r.getDir(), &rec);
                     }
                 }
             }

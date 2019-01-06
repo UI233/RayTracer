@@ -46,7 +46,8 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
             for (int j = 0; j < light_sz[i]; j++)
             {
                 TriangleLight l = tril[j];
-                l.hit(r, rec);
+                if (l.hit(r, rec))
+                    rec.lightidx = j;
             }
             break;
         case light::TYPE_NUM:
@@ -56,7 +57,7 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
         }
     }
 
-    return rec.t > 0 && rec.t < 100000.0f;
+    return rec.t > 0.0001f && rec.t < INF - 0.0001f;
 }
 
 __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_light, float2 sample_surface, int sample_num) const
@@ -69,7 +70,7 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
     PointLight pl;
     DirectionalLight dl;
     TriangleLight trl;
-
+    int idx;
     for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
     {
         if (num >= light_sz[i])
@@ -89,6 +90,7 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
             case light::TRIANGLE_LIGHT:
                 trl =  tril[num];
                 obj = &trl;
+                idx = num;
                 break;
             default:
                 obj =  nullptr;
@@ -98,7 +100,7 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
         }
     }
 
-    return obj ? light_power / obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface) : BLACK;
+    return obj ? light_power / obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface, idx) : BLACK;
 
 }
 
@@ -176,29 +178,30 @@ __host__ bool Scene::initializeScene(int light_size[],
 }
 
 //Incompleted
-CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, float2 sample_light, float2 sample_BRDF) const
+CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, float2 sample_light, float2 sample_BRDF, int idx) const
 {
     Ray r;
-    float distance;
+    float3 lpos;
     float3 color, res;
     bool blocked = false;
 
     color = light->lightIllumi(rec, &r, sample_light);
-    distance = length(rec.pos - r.getOrigin());
+    lpos = r.getOrigin();
 
 
     Material *this_material = rec.material;
     IntersectRecord light_rec;
 
-    //r = rec.spawnRay(r.getDir());
-    hit(r, light_rec);
+    r = rec.spawnRay(-r.getDir());
+    if (hit(r, light_rec))
+    {
+        blocked = light_rec.lightidx == idx ? false : (length(rec.pos - r.getOrigin()) < length(rec.pos - lpos) - 0.001f);
+    }
     light_rec.wo = r;
 
     //Ray wo;
-    float3 f = this_material -> f(-rec.wo.getDir(), -r.getDir());
+    float3 f = this_material -> f(-rec.wo.getDir(), r.getDir());
 
-    if (light_rec.t < distance - 0.1f)
-        blocked = true;
 
     res = BLACK;
     if (!isBlack(f) && !blocked)
@@ -223,16 +226,15 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
         f = this_material->sample_f(-rec.wo.getDir(), &wi, &rec.pdf_surface, sample_BRDF);
         f *= fabs(dot(rec.normal, wi));
         r = rec.spawnRay(wi);
-        //r = rec.spawnRay(r);
 
-        rec.t = 100000.0f;
-        rec.light = nullptr;
+        rec.t = INF;
+        rec.lightidx = -1;
         if (!isBlack(f) && rec.pdf_surface > 0.0001f)
         {
             if (!this_material->isSpecular())
             {
                 float pdf = light->PDF(rec, wi);
-                if (fabs(pdf) > 0.00001f)
+                if (fabs(pdf) > 0.001f)
                     return res;
                 weight = PowerHeuristic(rec.pdf_surface, pdf);
             }
@@ -240,18 +242,13 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
             float3 l;
             if (hit(r, rec))
             {
-                if (rec.light == (void*)light)
-                    l = light ->getLe(Ray(r.getOrigin(), -wi) , &rec);
+                if (rec.lightidx == idx)
+                    l = light -> L( -wi, &rec);
                 else
-                {
-                    Light *a =(Light*) rec.light;
-                    if(a)
-                        l = a->getLe(r, &rec);
-                }
+                    l = light->getLe(r);
 
                 res += l * f * weight / rec.pdf_surface;
             }
-            //return res;
         }
     }
 

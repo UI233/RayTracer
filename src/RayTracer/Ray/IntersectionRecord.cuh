@@ -17,7 +17,7 @@ CUDA_FUNC float3 offsetFromPoint(float3 origin, float3 normal, float3 error_boun
 class IntersectRecord
 {
 public:
-    CUDA_FUNC IntersectRecord() : t(INF), isLight(false), light(nullptr) {}
+    CUDA_FUNC IntersectRecord() : t(INF), isLight(false), lightidx(-1) {}
     CUDA_FUNC ~IntersectRecord() = default;
     CUDA_FUNC IntersectRecord(const float3 &p, const float3 &n, const Ray &r, const float &dis = INF) : pos(p), normal(n), t(dis), wo(r) {};
 
@@ -26,7 +26,7 @@ public:
     mat4 transformation;
     float t;
     Ray wo;
-    void* light;
+    int lightidx;
     int light_type;
     float pdf_light, pdf_surface;
     Material *material;

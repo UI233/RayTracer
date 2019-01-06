@@ -1,7 +1,7 @@
 ﻿#define WIDTH 800
 #define HEIGHT 600
-#define WIDTH_PER_BLOCK  80
-#define HEIGHT_PER_BLOCK  60
+#define WIDTH_PER_BLOCK  40
+#define HEIGHT_PER_BLOCK  30
 #define NUM 16
 #define MAX_DEPTH 10
 #define SAMPLE 4
@@ -19,14 +19,16 @@
 #include "Shader/myShader.h"
 #include "core/PathTracer.cuh"
 #include "Ray/Ray.cuh"
+#include <iostream>
 
 __constant__ Camera globalCam;
 curandState *state;
 float *data_tmp;
 Scene *sce;
 int *cnt;
+float img[3 * WIDTH * HEIGHT];
 
-int thread_num = 10 * 10 * 32;
+int thread_num = WIDTH * HEIGHT / WIDTH_PER_BLOCK / HEIGHT_PER_BLOCK * 32;
 __global__ void test(cudaSurfaceObject_t surface, Scene *scene, curandState *state, float* data_tmp, int *cnt);
 void display();
 __device__ void computeTexture();
@@ -50,13 +52,15 @@ int main(int argc, char **argv)
     test_for_initialize_scene();
     //loadModels();
 
-    while (!glfwWindowShouldClose(window) && sta)
-    {
-        sta = renderScene(changed);
-        //changed = false;
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
+    //while (!glfwWindowShouldClose(window) && sta)
+    //{
+    //    sta = renderScene(changed);
+    //    //changed = false;
+    //    glfwSwapBuffers(window);
+    //    glfwPollEvents();
+    //}
+
+    renderScene(true);
 
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -75,12 +79,26 @@ bool renderScene(bool changed)
     //ToDo: the state should be an array
     test <<<block_size, 32>>> (texture_surface, sce, state, data_tmp, cnt);
     auto error = cudaDeviceSynchronize();
-    //cudaDeviceSynchronize();
-    display();
-
-    //test << < WIDTH, HEIGHT >> > (texture_surface, 1.0f);
-    //cudaDeviceSynchronize();
+    cudaMemcpy(img, data_tmp, 3 * WIDTH * HEIGHT * sizeof(float), cudaMemcpyDeviceToHost);
     //display();
+
+    int idx = 0;
+    FILE * cas = fopen("test.ppm", "w");
+    fprintf(cas, "P3\n%d %d\n255\n",WIDTH, HEIGHT);
+    
+    for (int j = HEIGHT-1; j >= 0; j--)
+        for (int i = 0; i < WIDTH; i++)
+        {    
+            idx = (WIDTH * j + i) * 3;
+            int r = img[idx]  * 255, g = img[idx + 1]  * 255, b = img[idx + 2]  * 255;
+            r = min(255, r);
+            g = min(255, g);
+            b = min(255, b);
+
+            fprintf(cas, "%d %d %d\n", r, g, b);
+            //idx += 3;
+        }
+    fclose(cas);
 
     return error == cudaSuccess;
 }
@@ -187,19 +205,20 @@ void display()
 __global__ void test(cudaSurfaceObject_t surface, Scene *scene, curandState *state, float* data_tmp, int *cnt)
 {
     __shared__ StratifiedSampler<TWO_FOR_SHARED> sampler;
-
+    //if (threadIdx.x == 0 && blockIdx.x == 0 && blockIdx.y == 0)
+    //    ++*cnt;
+    __syncthreads();
     int idx = (blockIdx.x * blockDim.y + blockIdx.y) * 32 + threadIdx.x;
 
 
     //To do: use time to update the seed
-    curand_init(1774, idx,0, &state[idx]);
+    curand_init(3212, idx * 3,0, &state[idx]);
 
     if (threadIdx.x == 0)
     {
        sampler = StratifiedSampler<TWO_FOR_SHARED>(state + idx);
     }
 
-    __syncthreads();
     curandState *rstate = state + idx;
 
     Ray r;
@@ -225,37 +244,38 @@ __global__ void test(cudaSurfaceObject_t surface, Scene *scene, curandState *sta
             data_tmp[idx + 1] += tmp.y;
             data_tmp[idx + 2] += tmp.z;
 
-            //sampler_surface.regenerate(rstate);
-           // sampler_light.regenerate(rstate);
-           // p.regenerate(rstate);
+            sampler_surface.regenerate(rstate);
+            sampler_light.regenerate(rstate);
+            p.regenerate(rstate);
         }
-    __syncthreads();
+    //__syncthreads();
 
-    idx = 3 * (sty * WIDTH + stx);
+    //idx = 3 * (sty * WIDTH + stx);
+    //float weight = 1.0f / (32.0f * (*cnt));
     //Write to Texture
-    if(threadIdx.x == 0)
-        for (int i = 0; i < WIDTH_PER_BLOCK; i++)
-            for (int j = 0; j < HEIGHT_PER_BLOCK; j++)
-            {
-                x = i + stx;
-                y = j + sty;
-                idx = y * WIDTH + x;
-                idx = idx * 3;
-                //Bug here: should take average value
-                surf2Dwrite(make_float4(data_tmp[idx] / 32.0f, 
-                    data_tmp[idx + 1] / 32.0f, data_tmp[idx + 2] / 32.0f, 1.0f), surface, sizeof(float4) * x , y);
-            }
-
-
+        //for (int i = threadIdx.x; i < WIDTH_PER_BLOCK; i+=32)
+        //    for (int j = 0; j < HEIGHT_PER_BLOCK; j++)
+        //    {
+        //        x = i + stx;
+        //        y = j + sty;
+        //        idx = y * WIDTH + x;
+        //        idx = idx * 3;
+        //        
+        //        //Bug here: should take average value
+        //        surf2Dwrite(make_float4(data_tmp[idx] * weight,
+        //            data_tmp[idx + 1] * weight, data_tmp[idx + 2] * weight, 1.0f), surface, sizeof(float4) * x , y);
+        //    }
 }
 
 void test_for_initialize_scene()
 {
     Scene scene;
     int lz[light::TYPE_NUM] = {1,0,0}, ms[model::TYPE_NUM] = {0,0,1};
-    int mat_type[] = { material::LAMBERTIAN };
-    Lambertian lamb(make_float3(0.7f, 0.8f, 0.4f));
-    Material m(&lamb, material::LAMBERTIAN);
+    int mat_type[] = { material::LAMBERTIAN , material::LAMBERTIAN };
+    Lambertian lamb(make_float3(0.7f, 0.8f, 0.4f)), lamb2(make_float3(0.8f, 0.0f, 0.0f));
+    Material m(&lamb, material::LAMBERTIAN), c(&lamb2, material::LAMBERTIAN);
+    Material t[2] = { m,c };
+
     Quadratic q(make_float3(0.3f, 0.0f, 0.0f), Sphere);
     q.setUpTransformation(
         mat4(1.0f, 0.0f, 0.0f, 0.0f,
@@ -263,11 +283,21 @@ void test_for_initialize_scene()
             0.0f, 0.0f,1.0f, -10.0f,
             0.0f,0.0f,0.0f,1.0f)
     );
+/*
+    Quadratic s(make_float3(0.3f, 0.0f, 0.0f), Sphere);
+    s.setUpTransformation(
+        mat4(1.0f, 0.0f, 0.0f, -2.0f,
+            0.0f, 1.0f, 0.0f, -3.0f,
+            0.0f, 0.0f, 1.0f, -5.0f,
+            0.0f, 0.0f, 0.0f, 1.0f)
+    );*/
+
     PointLight pl(make_float3(-8.0f, 0.0f, 0.0f), make_float3(300.0, 350.0f, 300.0f));
+    Quadratic m_a[2] = { q};
 
     scene.initializeScene(
         lz, ms, &pl, nullptr, nullptr, nullptr, nullptr,
-        &q, mat_type, &m
+        m_a, mat_type, t
     );
 
     cudaMalloc(&sce, sizeof(Scene));

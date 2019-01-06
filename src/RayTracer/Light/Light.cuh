@@ -28,7 +28,8 @@ public:
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     CUDA_FUNC virtual float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     CUDA_FUNC virtual float PDF(IntersectRecord rec, const float3 &wi)const { return 0.0f; };
-    CUDA_FUNC virtual float3 getLe(Ray &r, IntersectRecord *rec = nullptr) const{ return BLACK; };
+    CUDA_FUNC virtual float3 getLe(Ray &r) const{ return BLACK; };
+    CUDA_FUNC virtual float3 L(const float3 &r, IntersectRecord *rec = nullptr) const { return BLACK; }
     bool isDelta;
 };
 
@@ -72,7 +73,7 @@ public:
         return rec.t * rec.t / (tri.area() * fabs(dot(rec.normal , wi))); 
     };
 
-    CUDA_FUNC float3 getLe(const float3 &r, IntersectRecord *rec = nullptr) const
+    CUDA_FUNC float3 L(const float3 &r, IntersectRecord *rec = nullptr) const
     {
         if (two_side)
             return illum;
@@ -86,4 +87,19 @@ private:
     Triangle tri;
     float3 illum;
     bool two_side;
+};
+
+class InfiniteAreaLight : public Light
+{
+public:
+    InfiniteAreaLight() : Light(false) {};
+    ~InfiniteAreaLight() = default;
+    CUDA_FUNC virtual float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const = 0;
+    //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;
+    CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const = 0;
+    CUDA_FUNC float PDF(IntersectRecord rec, const float3 &wi)const { return 0.0f; };
+    CUDA_FUNC float3 getLe(Ray &r) const { return BLACK; };
+    CUDA_FUNC float3 L(const float3 &r, IntersectRecord *rec = nullptr) const { return BLACK; }
+private:
+    
 };
