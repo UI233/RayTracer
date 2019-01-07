@@ -86,7 +86,7 @@ CUDA_FUNC bool TriangleLight::hit(Ray &r, IntersectRecord &rec)
         rec.material = my_material;
         rec.material_type = material_type;
         rec.t = t;
-        rec.normal = normal;
+        rec.normal = two_side ? (dot(normal, r.getDir()) > 0 ? -normal : normal) : normal;
         rec.pos = r.getPos(t);
         rec.isLight = true;
         rec.tangent = normalize((pos[1] - pos[0]) * m2 + (pos[2] - pos[0]) * m3);

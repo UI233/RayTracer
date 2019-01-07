@@ -56,7 +56,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
             }
         }
 
-        if (!ishit || bounces > MAX_DEPTH)
+        if (!ishit || bounces > MAX_DEPTH || rec.isLight)
             break;
 
         specular_bounce = rec.material_type & material::SPECULAR;

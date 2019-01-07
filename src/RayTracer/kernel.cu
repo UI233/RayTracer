@@ -345,7 +345,7 @@ void test_for_initialize_scene()
     );
     TriangleLight trl(make_float3(0.0f, 2.3f, -5.0f),
         make_float3(2.0f, 0.7f, -5.0f),
-        make_float3(0.0f, 0.0f, -5.0f),  make_float3(0.5f, 0.7f, 1.0f), true);
+        make_float3(0.0f, 0.0f, -5.0f),  make_float3(1.0f, 1.0f, 1.0f), true);
 
     Quadratic q(make_float3(0.3f, 0.0f, 0.0f), Sphere);
     q.setUpTransformation(
