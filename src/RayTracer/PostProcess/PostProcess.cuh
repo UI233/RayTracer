@@ -15,8 +15,6 @@ inline __device__ float3 RGB2Y(const float3 &color)
 		0.435f * color.z;
 	Y.z = 0.615f * color.x - 0.515f * color.y -
 		0.1f * color.z;
-	if (Y.x > 255.0f) Y.x = 255.0f;
-	if (Y.x < 0.0f)   Y.x = 0.0f;
 	return Y;
 }
 
