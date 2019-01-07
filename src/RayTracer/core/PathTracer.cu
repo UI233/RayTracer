@@ -34,11 +34,17 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
             {
                 if (rec.isLight)
                 {
-                    if (rec.light_type == light::TRIANGLE_LIGHT)
+                    if (rec.light_type >= light::TRIANGLE_LIGHT)
                     {
                         Light *light = scene.getIdxAreaLight(rec.lightidx);
-                        if(light)
-                            res += beta * light -> L(-r.getDir(), &rec);
+                        if (light)
+                        {
+                            if (rec.light_type == light::TRIANGLE_LIGHT)
+                            {
+                                TriangleLight l = *((TriangleLight*)light); 
+                                res += beta * l.L(-r.getDir(), &rec);
+                            }
+                        }
                     }
                 }
                 //Debug

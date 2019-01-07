@@ -3,6 +3,7 @@
 #include "thrust/device_vector.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include "helper_math.h"
 #ifndef BLACK
 #define BLACK make_float3(0.0f,0.0f,0.0f)
 #endif // !BLACK
@@ -23,14 +24,12 @@ class Light
 public:
     CUDA_FUNC virtual ~Light() = default;
     CUDA_FUNC Light() = default;
-    CUDA_FUNC Light(bool is) : isDelta(is) {}
     CUDA_FUNC virtual float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const = 0;
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     CUDA_FUNC virtual float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     CUDA_FUNC virtual float PDF(IntersectRecord rec, const float3 &wi)const { return 0.0f; };
     CUDA_FUNC virtual float3 getLe(Ray &r) const{ return BLACK; };
     CUDA_FUNC virtual float3 L(const float3 &r, IntersectRecord *rec = nullptr) const { return BLACK; }
-    bool isDelta;
 };
 
 class PointLight : public Light
@@ -65,34 +64,40 @@ class TriangleLight : public Light
 public:
     CUDA_FUNC TriangleLight() = default;
     CUDA_FUNC ~TriangleLight() = default;
-    CUDA_FUNC TriangleLight(const Triangle& triangle, const float3& light_color, bool two = false);
+    CUDA_FUNC TriangleLight(float3 posa, float3 posb, float3 posc, const float3& light_color, bool two = false);
     CUDA_FUNC float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const;
     CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const override;
     CUDA_FUNC bool hit(Ray &r, IntersectRecord &rec);
-    CUDA_FUNC float PDF(IntersectRecord rec, const float3 &wi)  const{ 
-        return rec.t * rec.t / (tri.area() * fabs(dot(rec.normal , wi))); 
-    };
+    CUDA_FUNC float3 interpolatePosition(float3 tri_sample) const;
+    CUDA_FUNC float area() const
+    {
+        return length(cross(pos[2] - pos[0], pos[1] - pos[0]));
+    }
 
+    CUDA_FUNC float PDF(IntersectRecord rec, const float3 &wi)  const{ 
+        return rec.t * rec.t / (area() * fabs(dot(rec.normal , wi))); 
+    };
     CUDA_FUNC float3 L(const float3 &r, IntersectRecord *rec = nullptr) const
     {
         if (two_side)
             return illum;
         else return dot(r, rec->normal) > 0 ? illum : BLACK;
     };
-    __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *mat)
-    {
-        return tri.setUpMaterial(type, mat);
-    }
+    __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *mat);
+
 private:
-    Triangle tri;
+    float3 pos[3];
+    float3 normal;
     float3 illum;
+    material::MATERIAL_TYPE material_type;
+    Material *my_material;
     bool two_side;
 };
 
 class EnvironmentLight : public Light
 {
 public:
-    EnvironmentLight() : Light(false) {};
+    EnvironmentLight() {};
     ~EnvironmentLight() = default;
     CUDA_FUNC virtual float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const = 0;
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;

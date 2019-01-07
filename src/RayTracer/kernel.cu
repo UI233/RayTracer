@@ -1,5 +1,5 @@
-﻿#define WIDTH 280
-#define HEIGHT 210
+﻿#define WIDTH 400
+#define HEIGHT 300
 #define WIDTH_PER_BLOCK  40
 #define HEIGHT_PER_BLOCK  30
 #define NUM 16
@@ -40,7 +40,7 @@ __global__ void initial(curandState *state, int *time)
     curand_init(idx , idx, 0, state + idx);
 }
 
-__global__ void debug(Scene *scene, float *data_tmp, curandState *state, int *cnt, float *Y)
+__global__ void debug(cudaSurfaceObject_t surface, Scene *scene, float *data_tmp, curandState *state, int *cnt)
 {
     if (threadIdx.x == 0 && blockIdx.x == 0)
         ++*cnt;
@@ -66,7 +66,7 @@ __global__ void debug(Scene *scene, float *data_tmp, curandState *state, int *cn
     data_tmp[idx + 1] = frac1 * data_tmp[idx + 1] + frac2 * tmp.y;
     data_tmp[idx + 2] = frac1 * data_tmp[idx + 2] + frac2 * tmp.z;
 
-    //surf2Dwrite(make_float4(data_tmp[idx], data_tmp[idx + 1], data_tmp[idx + 2], 1.0f), surface, x * sizeof(float4), y);
+    surf2Dwrite(make_float4(data_tmp[idx], data_tmp[idx + 1], data_tmp[idx + 2], 1.0f), surface, x * sizeof(float4), y);
 }
 
 void display();
@@ -146,7 +146,7 @@ bool renderScene(bool changed)
     error = cudaDeviceSynchronize();
     //}
     //postProcess << <, >> > (texture_surface, data_tmp, Y);
-    error = cudaDeviceSynchronize();
+    //error = cudaDeviceSynchronize();
     display();
 
     int idx = 0;
@@ -322,15 +322,31 @@ __global__ void test(cudaSurfaceObject_t surface, Scene *scene, curandState *sta
 void test_for_initialize_scene()
 {
     Scene scene;
-    int lz[light::TYPE_NUM] = {1,0,0}, ms[model::TYPE_NUM] = {0,0,2};
+    int lz[light::TYPE_NUM] = {0,0,1}, ms[model::TYPE_NUM] = {0,0,2};
     int mat_type[] = { material::LAMBERTIAN , material::LAMBERTIAN, material::LAMBERTIAN };
     Lambertian lamb(make_float3(0.7f, 0.8f, 0.4f)), lamb2(make_float3(0.8f, 0.0f, 0.0f)), lamb3(make_float3(1.0f, 1.0f, 1.0f));
     Material m(&lamb, material::LAMBERTIAN), c(&lamb2, material::LAMBERTIAN), cs(&lamb3, material::LAMBERTIAN);
     Material t[] = { m,c ,cs};
-/*
+
     Triangle tria(
-        make_float3(),
-        );*/
+        make_float3(0.0f, 2.3f, -5.0f),
+        make_float3(2.0f, 0.7f, -5.0f),
+        make_float3(0.0f ,0.0f , -5.0f),
+        make_float3(1.0f, 0.0f ,0.0f),
+        make_float3(0.0f, 1.0f ,0.0f),
+        make_float3(0.0f ,1.0f ,0.0f) 
+        );
+
+    tria.setUpTransformation(
+        mat4(1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f)
+    );
+    TriangleLight trl(make_float3(0.0f, 2.3f, -5.0f),
+        make_float3(2.0f, 0.7f, -5.0f),
+        make_float3(0.0f, 0.0f, -5.0f),  make_float3(0.5f, 0.7f, 1.0f), true);
+
     Quadratic q(make_float3(0.3f, 0.0f, 0.0f), Sphere);
     q.setUpTransformation(
         mat4(1.0f, 0.0f, 0.0f, 0.0f,
@@ -351,26 +367,25 @@ void test_for_initialize_scene()
     Quadratic m_a[2] = { q,s};
 
     scene.initializeScene(
-        lz, ms, &pl, nullptr, nullptr, nullptr, nullptr,
+        lz, ms, &pl, nullptr, &trl, &tria, nullptr,
         m_a, mat_type, t
     );
 
     cudaMalloc(&sce, sizeof(Scene));
     cudaMemcpy(sce, &scene, sizeof(Scene), cudaMemcpyHostToDevice);
-//    cas<<<1,1>>>(sce);
 }
 
-__global__ void postProcess(cudaSurfaceObject_t surface, float *data_tmp, float *Y)
-{
-    int idx;
-    float3 display_color;
-    //for(int x = stx; x < stx + WIDTH_PER_THREAD; x++) 
-    //  for(int y = sty; y < sty + HEIGHT_PER_THREAD; y++)
-        {
-            idx = 3 * (y * WIDTH + x);
-            display_color = filter(make_float3(data_tmp[idx], data_tmp[idx + 1],
-                data_tmp[idx + 2]), *Y);
-            surf2Dwrite(make_float4(display_color.x, display_color.y, display_color.z, 1.0f),
-                surface, x * sizeof(float4), y);
-        }
-}
+//__global__ void postProcess(cudaSurfaceObject_t surface, float *data_tmp, float *Y)
+//{
+//    int idx;
+//    float3 display_color;
+//    //for(int x = stx; x < stx + WIDTH_PER_THREAD; x++) 
+//    //  for(int y = sty; y < sty + HEIGHT_PER_THREAD; y++)
+//        {
+//            idx = 3 * (y * WIDTH + x);
+//            display_color = filter(make_float3(data_tmp[idx], data_tmp[idx + 1],
+//                data_tmp[idx + 2]), *Y);
+//            surf2Dwrite(make_float4(display_color.x, display_color.y, display_color.z, 1.0f),
+//                surface, x * sizeof(float4), y);
+//        }
+//}

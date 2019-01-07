@@ -47,7 +47,10 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
             {
                 TriangleLight l = tril[j];
                 if (l.hit(r, rec))
+                {
                     rec.lightidx = j;
+                    rec.light_type = light::TRIANGLE_LIGHT;
+                }
             }
             break;
         case light::TYPE_NUM:
@@ -66,12 +69,13 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
     num = sample_num % light_sz_all;
     cnt = 0;
 
-    Light *obj;
+    Light *obj = nullptr;
     PointLight pl;
     DirectionalLight dl;
     TriangleLight trl;
     int idx;
-    for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
+    bool isDelta;
+    for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM && obj == nullptr; i++)
     {
         if (num >= light_sz[i])
             num -= light_sz[i];
@@ -80,14 +84,17 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
             switch (light::LIGHT_TYPE(i))
             {
             case light::POINT_LIGHT:
+                isDelta = true;
                 pl =  pointl[num];
                 obj = &pl;
                 break;
             case light::DIR_LIGHT:
+                isDelta = true;
                 dl =  dirl[num];
                 obj = &dl;
                 break;
             case light::TRIANGLE_LIGHT:
+                isDelta = false;
                 trl =  tril[num];
                 obj = &trl;
                 idx = num;
@@ -100,7 +107,7 @@ __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_ligh
         }
     }
 
-    return obj ? light_power / obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface, idx) : BLACK;
+    return obj ? light_power / obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface, idx, isDelta) : BLACK;
 
 }
 
@@ -178,7 +185,7 @@ __host__ bool Scene::initializeScene(int light_size[],
 }
 
 //Incompleted
-CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, float2 sample_light, float2 sample_BRDF, int idx) const
+CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, float2 sample_light, float2 sample_BRDF, int idx, bool isDelta) const
 {
     Ray r;
     float3 lpos;
@@ -208,7 +215,7 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
     res = BLACK;
     if (!isBlack(f) && !blocked && !isBlack(color))
     {  
-        if (light->isDelta)
+        if (isDelta)
         {
             color =  color * f / rec.pdf_light;
         }
@@ -222,7 +229,7 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
     float3 wi;
     
     float weight = 1.0f;
-    if (!light->isDelta)
+    if (!isDelta)
     {
         f = rec.sample_f(-rec.wo.getDir(), &wi, &rec.pdf_surface, sample_BRDF);
         f *= fabs(dot(rec.normal, wi));

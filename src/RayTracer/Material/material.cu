@@ -35,5 +35,5 @@ CUDA_FUNC bool Lambertian::isSpecular() const
 
 CUDA_FUNC float Lambertian::PDF(const float3 &wo, const float3 &wi) const
 {
-    return wi.y * INV_PI;
+    return wi.y > 0.0f ? wi.y * INV_PI : 0.0f;
 }
