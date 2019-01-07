@@ -27,7 +27,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
         rec.lightidx = -1;
         rec.isLight = false;
         ishit = scene.hit(r, rec);
-        rec.wo = r;
+        rec.wo = r; 
         if(!bounces  || specular_bounce)
         {
             if (ishit)

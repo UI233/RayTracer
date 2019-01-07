@@ -38,8 +38,12 @@ __global__ void initial(curandState *state, int *time)
     curand_init(idx , idx, 0, state + idx);
 }
 
-__global__ void debug(cudaSurfaceObject_t surface, Scene *scene,float *data_tmp, curandState *state)
+__global__ void debug(cudaSurfaceObject_t surface, Scene *scene,float *data_tmp, curandState *state, int *cnt)
 {
+    if (threadIdx.x == 0 && blockIdx.x == 0)
+        ++*cnt;
+
+    __syncthreads();
     int x = threadIdx.x, y = blockIdx.x;
     int idx = y * blockDim.x + x;
     curandState *rstate = state + idx;
@@ -54,11 +58,13 @@ __global__ void debug(cudaSurfaceObject_t surface, Scene *scene,float *data_tmp,
     
     //if(x == WIDTH / 2 && y == HEIGHT / 2)
     tmp = pathTracer(r, *scene,sampler_light,sampler_surface,p ,state + idx);
+    float frac1 = (float)(*cnt - 1) / *cnt, frac2 = 1.0f / *cnt;
+    idx *= 3;
+    data_tmp[idx] = frac1 * data_tmp[idx] + frac2 * tmp.x;
+    data_tmp[idx + 1] = frac1 * data_tmp[idx + 1] + frac2 * tmp.y;
+    data_tmp[idx + 2] = frac1 * data_tmp[idx + 2] + frac2 * tmp.z;
 
-    //tmp = tmp / (tmp +  make_float3(.5f, .5f, .5f));
-    //tmp = make_float3(0.5f, 0.6f, 0.7f);
-    //tmp = r.getDir();
-    surf2Dwrite(make_float4(fabs(tmp.x), fabs(tmp.y), fabs(tmp.z), 1.0f), surface, x * sizeof(float4), y);
+    surf2Dwrite(make_float4(data_tmp[idx], data_tmp[idx + 1], data_tmp[idx + 2], 1.0f), surface, x * sizeof(float4), y);
 }
 
 void display();
@@ -134,7 +140,7 @@ bool renderScene(bool changed)
     cudaError_t error;
     //if (changed)
     //{
-        debug << <HEIGHT, WIDTH >> > (texture_surface, sce, data_tmp,state);
+        debug << <HEIGHT, WIDTH >> > (texture_surface, sce, data_tmp,state, cnt);
         error = cudaDeviceSynchronize();
     //}
     display();
@@ -221,7 +227,7 @@ bool initCUDA(GLuint glTex)
 
     error = cudaCreateSurfaceObject(&texture_surface, &dsc);
     
-    Camera cam(make_float3(0.0f, 0.0f, 10.0f), make_float3(0.0f, 0.0f, -1.0f), 2.0f, 1.00f, 100.0f,
+    Camera cam(make_float3(0.0f, 0.0f, 0.0f), make_float3(0.0f, 0.0f, -1.0f), 2.0f, 1.00f, 100.0f,
         make_int2(WIDTH / 2, HEIGHT / 2), make_float3(0.0f, 1.0f, 0.0f));
 
     cudaMalloc(&state, sizeof(curandState) * thread_num);
@@ -318,16 +324,19 @@ void test_for_initialize_scene()
     Lambertian lamb(make_float3(0.7f, 0.8f, 0.4f)), lamb2(make_float3(0.8f, 0.0f, 0.0f)), lamb3(make_float3(1.0f, 1.0f, 1.0f));
     Material m(&lamb, material::LAMBERTIAN), c(&lamb2, material::LAMBERTIAN), cs(&lamb3, material::LAMBERTIAN);
     Material t[] = { m,c ,cs};
-
+/*
+    Triangle tria(
+        make_float3(),
+        );*/
     Quadratic q(make_float3(0.3f, 0.0f, 0.0f), Sphere);
     q.setUpTransformation(
         mat4(1.0f, 0.0f, 0.0f, 0.0f,
              0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f,1.0f, 0.0f,
+            0.0f, 0.0f,1.0f, -10.0f,
             0.0f,0.0f,0.0f,1.0f)
     );
 
-    Quadratic s(make_float3(4342343.0f, 0.0f, 0.0f), Sphere);
+    Quadratic s(make_float3(1.0f, 0.0f, 0.0f), Sphere);
     s.setUpTransformation(
         mat4(1.0f, 0.0f, 0.0f, -2.0f,
             0.0f, 1.0f, 0.0f, -3.0f,
