@@ -1,5 +1,21 @@
 #include "Model.cuh"
 #define UP_VEC make_float3(0.0f, getRadius(), 0.0f)
+
+CUDA_FUNC float mix_produt(float3 a, float3 b, float3 c)
+{
+    return dot(cross(a, b), c);
+}
+
+CUDA_FUNC Triangle::Triangle(float3 a, float3 b, float3 c, float3 norma, float3 normb, float3 normc)
+{
+    pos[0] = a;
+    pos[1] = b;
+    pos[2] = c;
+    normal[0] = norma;
+    normal[1] = normb;
+    normal[2] = normc;
+}
+
 CUDA_FUNC Triangle::Triangle(float3 p[3], float3 norm[3]) {
     pos[0] = p[0];
     pos[1] = p[1];
@@ -41,44 +57,36 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
     //colideRec.t = -1.0f;
 	float3 ta=transformation(pos[0]), tb=transformation(pos[1]), tc= transformation(pos[2]);
 
-    float3 ab, ac, ap, norm, e, qp;
     float t;
-    //ab = pos[1] - pos[0];
-    //ac = pos[2] - pos[0];
-	ab = tb - ta;
-	ac = tc - ta;
+    float3 normal = cross(ta - tc, tb - tc);
+    float dot_normal_dir = dot(normal, r.getDir());
+    if (fabs(dot_normal_dir) < FLOAT_EPISLON)
+        return false;
 
-	float3 dUV1 = { 1.0f,0.0f,0.0f }, dUV2 = { 0.0f,1.0f,0.0f };
-	float2 dUVy = { 1.0f,-0.0f };
-	float f = 1.0f / length(cross(dUV1, dUV2));
-	float3 tangent;
-	tangent.x = f * dot(dUVy, float2 { ab.x, ab.x });
-	tangent.y = f * dot(dUVy, float2 { ab.y, ab.y });
-	tangent.z = f * dot(dUVy, float2 { ab.z, ab.z });
-	
-    qp = -r.getDir();
-    norm = cross(ab, ac);
-    float d = dot(qp, norm);
-    if (d <= 0.0f) return false;
-    ap = r.getOrigin() - pos[0];
-    t = dot(ap, norm);
-    if (t < 0.0f) return false;
-    e = cross(qp, ap);
-    float v = dot(ac, e);
-    if (v < 0.0f || v > d) return false;
-    float w = -dot(ab, e);
-    if (w < 0.0f || v + w > d) return false;
-    t /= d;
+    t = (-dot(r.getOrigin(), normal) + dot(ta, normal))/ dot_normal_dir;
+
+    float3 pos = r.getPos(t);
+
+    float S = area();
+    float s1 = length(cross(pos - ta, pos -tb));
+    float s2 = length(cross(pos - tc, pos - ta));
+    float s3 = length(cross(pos - tc, pos - tb));
+
+
+    if (fabs(s1 + s2 + s3 - S) > 0.001f)
+        return false;
+
+    float m1 = s3 / S, m2 = s2 / S, m3 = 1.0f - m1 - m2;
 
     if (t > FLOAT_EPISLON && t < colideRec.t)
     {
         colideRec.material = my_material;
         colideRec.material_type = material_type;
         colideRec.t = t;
-        colideRec.normal = normalize(transpose(inverse(transformation))(norm));
+        colideRec.normal = normal;
         colideRec.pos = r.getPos(t);
 		colideRec.isLight = false;
-        colideRec.tangent =  normalize(tangent);
+        colideRec.tangent =  normalize((tb - ta) * m2 + (tc - ta) * m3);
 		return true;
     }
 

@@ -62,6 +62,7 @@ public:
      Triangle() = default;
      ~Triangle() = default;
 	 CUDA_FUNC Triangle(float3 a, float3 b, float3 c, float3 norm[3]);
+     CUDA_FUNC Triangle(float3 a, float3 b, float3 c, float3 norma, float3 normb, float3 normc);
 	 CUDA_FUNC Triangle(float3 p[3], float3 norm[3]);
 	 CUDA_FUNC Triangle(const float3 p[3], const float3 norm[3]);
 	 CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
