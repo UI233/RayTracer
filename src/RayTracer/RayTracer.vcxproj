@@ -110,6 +110,7 @@
     <ClInclude Include="Matrix\Matrix.cuh" />
     <ClInclude Include="Model\Model.cuh" />
     <CudaCompile Include="Ray\Ray.cuh" />
+    <ClInclude Include="PostProcess\PostProcess.cuh" />
     <ClInclude Include="Ray\IntersectionRecord.cuh" />
     <ClInclude Include="Sampler\Sampler.cuh" />
     <ClInclude Include="Scene\Scene.cuh" />

@@ -27,6 +27,7 @@
     <ClInclude Include="Ray\IntersectionRecord.cuh" />
     <ClInclude Include="Material\Object.cuh" />
     <ClInclude Include="core\PathTracer.cuh" />
+    <ClInclude Include="PostProcess\PostProcess.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\glut\src\gl3w.c" />

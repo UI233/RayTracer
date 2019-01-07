@@ -19,6 +19,7 @@
 #include "Shader/myShader.h"
 #include "core/PathTracer.cuh"
 #include "Ray/Ray.cuh"
+#include "PostProcess/PostProcess.cuh"
 #include <iostream>
 #include <ctime>
 
@@ -27,10 +28,11 @@ curandState *state;
 float *data_tmp;
 Scene *sce;
 int *cnt;
-float img[3 * WIDTH * HEIGHT];
+float *Ymax;
 
 int thread_num = WIDTH * HEIGHT;
-__global__ void test(cudaSurfaceObject_t surface, Scene *scene, curandState *state, float* data_tmp, int *cnt);
+__global__ void test(Scene *scene, curandState *state, float* data_tmp, int *cnt);
+__global__ void postProcess(cudaSurfaceObject_t surface, float *data_tmp);
 
 __global__ void initial(curandState *state, int *time)
 {
@@ -38,7 +40,7 @@ __global__ void initial(curandState *state, int *time)
     curand_init(idx , idx, 0, state + idx);
 }
 
-__global__ void debug(cudaSurfaceObject_t surface, Scene *scene,float *data_tmp, curandState *state, int *cnt)
+__global__ void debug(Scene *scene, float *data_tmp, curandState *state, int *cnt, float *Y)
 {
     if (threadIdx.x == 0 && blockIdx.x == 0)
         ++*cnt;
@@ -64,7 +66,7 @@ __global__ void debug(cudaSurfaceObject_t surface, Scene *scene,float *data_tmp,
     data_tmp[idx + 1] = frac1 * data_tmp[idx + 1] + frac2 * tmp.y;
     data_tmp[idx + 2] = frac1 * data_tmp[idx + 2] + frac2 * tmp.z;
 
-    surf2Dwrite(make_float4(data_tmp[idx], data_tmp[idx + 1], data_tmp[idx + 2], 1.0f), surface, x * sizeof(float4), y);
+    //surf2Dwrite(make_float4(data_tmp[idx], data_tmp[idx + 1], data_tmp[idx + 2], 1.0f), surface, x * sizeof(float4), y);
 }
 
 void display();
@@ -140,14 +142,15 @@ bool renderScene(bool changed)
     cudaError_t error;
     //if (changed)
     //{
-        debug << <HEIGHT, WIDTH >> > (texture_surface, sce, data_tmp,state, cnt);
-        error = cudaDeviceSynchronize();
+    debug << <HEIGHT, WIDTH >> > (texture_surface, sce, data_tmp,state, cnt);
+    error = cudaDeviceSynchronize();
     //}
+    //postProcess << <, >> > (texture_surface, data_tmp, Y);
+    error = cudaDeviceSynchronize();
     display();
 
     int idx = 0;
     
-
     return true;
 }
 
@@ -355,4 +358,19 @@ void test_for_initialize_scene()
     cudaMalloc(&sce, sizeof(Scene));
     cudaMemcpy(sce, &scene, sizeof(Scene), cudaMemcpyHostToDevice);
 //    cas<<<1,1>>>(sce);
+}
+
+__global__ void postProcess(cudaSurfaceObject_t surface, float *data_tmp, float *Y)
+{
+    int idx;
+    float3 display_color;
+    //for(int x = stx; x < stx + WIDTH_PER_THREAD; x++) 
+    //  for(int y = sty; y < sty + HEIGHT_PER_THREAD; y++)
+        {
+            idx = 3 * (y * WIDTH + x);
+            display_color = filter(make_float3(data_tmp[idx], data_tmp[idx + 1],
+                data_tmp[idx + 2]), *Y);
+            surf2Dwrite(make_float4(display_color.x, display_color.y, display_color.z, 1.0f),
+                surface, x * sizeof(float4), y);
+        }
 }
