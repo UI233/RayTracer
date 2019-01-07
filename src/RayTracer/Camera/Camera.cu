@@ -30,7 +30,7 @@ CUDA_FUNC Ray Camera::generateRay(int x, int y)
     //The direction of ray which computes the color of the pixel on (x,y)
     float3 sample_direction(raster2world(make_float3(x, y, 0.0f)));
 
-    return Ray(pos, sample_direction);
+    return Ray(pos, sample_direction - pos);
 }
 
 //CUDA_FUNC Ray generateDifferentialRay();

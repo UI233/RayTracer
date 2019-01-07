@@ -21,7 +21,7 @@ public:
     CUDA_FUNC ~IntersectRecord() = default;
     CUDA_FUNC IntersectRecord(const float3 &p, const float3 &n, const Ray &r, const float &dis = INF) : pos(p), normal(n), t(dis), wo(r) {};
 
-    float3 pos, normal;
+    float3 pos, normal, tangent;
     //World2Local
     mat4 transformation;
     float t;
@@ -36,8 +36,24 @@ public:
     //Make sure that the light wounldn't reintersect the surface 
     CUDA_FUNC Ray spawnRay(const float3 &w)
     {
-        float3 ro = offsetFromPoint(pos, normal, make_float3(0.0001f, 0.0001f, 0.0001f), w);
+        float3 ro = offsetFromPoint(pos, normal, make_float3(0.01f, 0.01f, 0.01f), w);
         return Ray(ro, w);
+    }
+
+    CUDA_FUNC float3 f(const float3 &wo, const float3 &wi) const
+    {
+        return material->f(normal, tangent, wo, wi);
+    }
+
+    //emited ray, incident ray, possibility for wi, the 2-D sample points between [0, 1]
+    CUDA_FUNC  float3 sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const
+    {
+        return material->sample_f(normal, tangent, wo, wi, pdf,sample);
+    }
+
+    CUDA_FUNC float PDF( const float3 &wo, const float3 &wi) const
+    {
+        return material->PDF(normal, tangent, wo, wi);
     }
 
 };

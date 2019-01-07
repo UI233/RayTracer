@@ -1,11 +1,12 @@
 #include "Object.cuh"
-CUDA_FUNC float3 Material::f(const float3 &wo, const float3 &wi) const
+#include <cstdio>
+CUDA_FUNC float3 Material::f(float3 normal, float3 tangent, const float3 &wo, const float3 &wi) const
 {
     float3 f = BLACK;
     if (m_type == material::LAMBERTIAN)
     {
         Lambertian tmp = *(Lambertian*)brdfs;
-        f = tmp.f(world2Local(wo), world2Local(wi));
+        f = tmp.f(world2Local(normal, tangent, wo), world2Local(normal, tangent, wi));
     }
     else if (m_type == material::FRESNEL)
     {
@@ -19,14 +20,15 @@ CUDA_FUNC float3 Material::f(const float3 &wo, const float3 &wi) const
     return f;
 }
 
-CUDA_FUNC float3 Material::sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const
+CUDA_FUNC float3 Material::sample_f(float3 normal, float3 tangent, const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const
 {
-    float3 rwo = world2Local(wo);
+    float3 rwo = world2Local(normal, tangent, wo);
     float3 res = BLACK;
+    Lambertian tmp;
     if (m_type == material::LAMBERTIAN)
     {
-        Lambertian tmp = *(Lambertian*)brdfs;
-        return tmp.sample_f(rwo, wi, pdf, sample);
+        tmp = *(Lambertian*)brdfs;
+        res = tmp.sample_f(rwo, wi, pdf, sample);
     }
     else if (m_type == material::FRESNEL)
     {
@@ -37,14 +39,13 @@ CUDA_FUNC float3 Material::sample_f(const float3 &wo, float3 *wi, float *pdf, co
 
     }
 
-    *wi = local2World(*wi);
-
+    *wi = local2World(normal, tangent, *wi);
     return res;
 }
 
-CUDA_FUNC float Material::PDF(const float3 &wo, const float3 &wi) const
+CUDA_FUNC float Material::PDF(float3 normal, float3 tangent, const float3 &wo, const float3 &wi) const
 {
-    float3 rwo = world2Local(wo), rwi = world2Local(wi);
+    float3 rwo = world2Local(normal, tangent, wo), rwi = world2Local(normal, tangent, wi);
 
     if (m_type == material::LAMBERTIAN)
     {
@@ -64,14 +65,12 @@ CUDA_FUNC float Material::PDF(const float3 &wo, const float3 &wi) const
 }
 
 //The normal and tangant for sphere
-CUDA_FUNC float3 Material::world2Local(const float3 & world) const
+CUDA_FUNC float3 Material::world2Local(float3 normal, float3 tangent, const float3 & world) const
 {
-    static float3 B;
-    B = cross(tangent, normal);
-    return make_float3(dot(world, tangent) , dot(world, normal) ,dot(world, B));
+    return make_float3(dot(world, tangent) , dot(world, normal) ,dot(world, normalize(cross(tangent, normal))));
 }
 
-CUDA_FUNC float3 Material::local2World(const float3 & local) const
+CUDA_FUNC float3 Material::local2World(float3 normal, float3 tangent, const float3 & local) const
 {
-    return local.x * tangent + local.y * normal + local.z * cross(tangent, normal);
+    return local.x * tangent + local.y * normal + local.z * normalize(cross(tangent, normal));
 }

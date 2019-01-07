@@ -39,14 +39,14 @@ public:
         float step = 1.0f / sz;
         //Create Strarified samples
         for (int i = 0; i < sz; i++)
-            data[i] = (i + (float)curand(state) / maxn) * step;
+            data[i] = (i + curand_uniform(state)) * step;
         
         int idx;
         float tmp;
         //random shuffle
         for (int i = 0; i < sz; i++)
         {
-            idx = i + (int)(((float)curand(state) / maxn) * (sz - i));
+            idx = i + (int)((curand_uniform(state) / maxn) * (sz - i));
             tmp = data[idx];
             data[idx] = i;
             data[i] = tmp;
@@ -66,7 +66,7 @@ public:
         else
         {
             if (state)
-                return (float)curand(state) / maxn;
+                return curand_uniform(state);
             else return 0.0f;
         }
     }
@@ -76,14 +76,14 @@ public:
         float step = 1.0f / size;
         //Create Strarified samples
         for (int i = 0; i < size; i++)
-            data[i] = (i + (float)curand(state) / maxn) * step;
+            data[i] = (i + curand_uniform(state)) * step;
 
         int idx;
         float tmp;
         //random shuffle
         for (int i = 0; i < size; i++)
         {
-            idx = i + (int)(((float)curand(state) / maxn) * (size - i));
+            idx = i + (int)(curand_uniform(state) * (size - i));
             tmp = data[idx];
             data[idx] = i;
             data[i] = tmp;
@@ -109,21 +109,21 @@ public:
         float samplev;
         for (int i = 0; i < sz; i++)
         {
-            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            samplev = (i + curand_uniform(state) ) * invSamples;
             data[++idx] = fminf(0.9999f, samplev);
-            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            samplev = (i + curand_uniform(state)) * invSamples;
             data[++idx] = fminf(0.9999f, samplev);
         }
 
         float temp;
         for (int i = 0; i < sz; i++)
         {
-            idx = i + (int)(((float)curand(state) / maxn) * (sz - i));
+            idx = i + (int)((curand_uniform(state)) * (sz - i));
             temp = data[2 * i];
             data[2 * i] = data[2 * idx];
             data[2 * idx] = temp;
 
-            idx = i + (int)(((float)curand(state) / maxn) * (sz - i));
+            idx = i + (int)((curand_uniform(state) ) * (sz - i));
             temp = data[2 * i + 1];
             data[2 * i + 1] = data[2 * idx + 1];
             data[2 * idx + 1] = temp;
@@ -143,7 +143,7 @@ public:
         else
         {
             if (state)
-                return make_float2((float)curand(state) / maxn, (float)curand(state) / maxn);
+                return make_float2(curand_uniform(state), curand_uniform(state));
             else return make_float2(0.0f, 0.0f);
         }
     }
@@ -155,21 +155,21 @@ public:
         float samplev;
         for (int i = 0; i < size; i++)
         {
-            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            samplev = (i + curand_uniform(state)) * invSamples;
             data[++idx] = fminf(0.9999f, samplev);
-            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            samplev = (i + curand_uniform(state) ) * invSamples;
             data[++idx] = fminf(0.9999f, samplev);
         }
 
         float temp;
         for (int i = 0; i < size; i++)
         {
-            idx = i + (int)(((float)curand(state) / maxn) * (size - i));
+            idx = i + (int)(curand_uniform(state) * (size - i));
             temp = data[2 * i];
             data[2 * i] = data[2 * idx];
             data[2 * idx] = temp;
 
-            idx = i + (int)(((float)curand(state) / maxn) * (size - i));
+            idx = i + (int)((curand_uniform(state) * (size - i)));
             temp = data[2 * i + 1];
             data[2 * i + 1] = data[2 * idx + 1];
             data[2 * idx + 1] = temp;
@@ -193,21 +193,21 @@ public:
         float samplev;
         for (int i = 0; i < 32; i++)
         {
-            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            samplev = (i + curand_uniform(state) * invSamples);
             data[++idx] = fminf(0.9999f, samplev);
-            samplev = (i + (float)curand(state) / maxn) * invSamples;
+            samplev = (i + curand_uniform(state) * invSamples);
             data[++idx] = fminf(0.9999f, samplev);
         }
 
         float temp;
         for (int i = 0; i < 32; i++)
         {
-            idx = i + (int)(((float)curand(state) / maxn) * (32 - i));
+            idx = i + (int)((curand_uniform(state) * (32 - i)));
             temp = data[2 * i];
             data[2 * i] = data[2 * idx];
             data[2 * idx] = temp;
 
-            idx = i + (int)(((float)curand(state) / maxn) * (32 - i));
+            idx = i + (int)((curand_uniform(state) * (32 - i)));
             temp = data[2 * i + 1];
             data[2 * i + 1] = data[2 * idx + 1];
             data[2 * idx + 1] = temp;
@@ -223,7 +223,7 @@ public:
         else
         {
             if (state)
-                return make_float2((float)curand(state) / maxn, (float)curand(state) / maxn);
+                return make_float2(curand_uniform(state), curand_uniform(state));
             else return make_float2(0.0f, 0.0f);
         }
     }

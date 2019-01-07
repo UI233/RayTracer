@@ -89,11 +89,11 @@ private:
     bool two_side;
 };
 
-class InfiniteAreaLight : public Light
+class EnvironmentLight : public Light
 {
 public:
-    InfiniteAreaLight() : Light(false) {};
-    ~InfiniteAreaLight() = default;
+    EnvironmentLight() : Light(false) {};
+    ~EnvironmentLight() = default;
     CUDA_FUNC virtual float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const = 0;
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const = 0;
@@ -101,5 +101,5 @@ public:
     CUDA_FUNC float3 getLe(Ray &r) const { return BLACK; };
     CUDA_FUNC float3 L(const float3 &r, IntersectRecord *rec = nullptr) const { return BLACK; }
 private:
-    
+    char * texture;
 };

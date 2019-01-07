@@ -24,6 +24,8 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
     for (int bounces = 0; ; bounces++)
     {
         rec.t = INF;
+        rec.lightidx = -1;
+        rec.isLight = false;
         ishit = scene.hit(r, rec);
         rec.wo = r;
         if(!bounces  || specular_bounce)
@@ -39,9 +41,11 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
                             res += beta * light -> L(-r.getDir(), &rec);
                     }
                 }
+                //Debug
             }
             else
             {
+                //Debug
                 //ToDo : Add Light from environment, infinite area light for example
             }
         }
@@ -56,7 +60,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
         {
             sample_light = sampler_light(cnt_light++, state);
             sample_scatter = sampler_scatter(cnt_scatter++, state);
-            le = scene.sampleOneLight(rec, sample_light, sample_scatter, curand(state));
+            le = scene.sampleOneLight(rec, sample_light, sample_scatter, sampler_p(cnt_q++) * scene.light_sz_all);
             res += beta * le;
         }
         else if(rec.material -> isTrans())
@@ -66,7 +70,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
             etaScale = dot(-r.getDir(), rec.normal) < 0 ? 1.0f / t : t;
         }
         //use brdf to sample new direction
-        le = rec.material->sample_f(-r.getDir(), &wi, &pdf, sample_scatter);
+        le = rec.sample_f(-r.getDir(), &wi, &pdf, sample_scatter);
 
         beta *= le * fabs(dot(r.getDir(), rec.normal)) / pdf;
         r = rec.spawnRay(wi);

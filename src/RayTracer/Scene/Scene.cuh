@@ -24,10 +24,10 @@ public:
             return tril + idx;
         return  nullptr;
     }
+    int light_sz_all, model_sz_all;
 private:
     int light_sz[light::TYPE_NUM];
     int model_sz[model::TYPE_NUM];
-    int light_sz_all, model_sz_all;
     float3 light_power;
 
     DirectionalLight *dirl;

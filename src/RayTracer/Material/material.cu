@@ -18,10 +18,10 @@ CUDA_FUNC float3 Lambertian::sample_f(const float3 &wo, float3 *wi, float *pdf, 
     if (pdf == nullptr || wi == nullptr)
         return make_float3(0.0f);
 
-    float theta = sample.x * 2.0f * M_PI, phi = sample.y * M_PI_2;
+    float theta = sample.x * 2.0f * M_PI, phi = fmaxf(sample.y * M_PI_2, 0.01f);
     float sinPhi = sin(phi), cosPhi = cos(phi);
 
-    *wi = make_float3(sin(theta) * sinPhi, cosPhi, cos(theta) * sinPhi);
+    *wi = make_float3(sin(theta) * cosPhi, sinPhi, cos(theta) * cosPhi);
     *pdf = PDF(wo, *wi);
 
     return f(wo, *wi);

@@ -57,7 +57,7 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
         }
     }
 
-    return rec.t > 0.0001f && rec.t < INF - 0.0001f;
+    return rec.t > 0.001f && rec.t < INF - 0.1f;
 }
 
 __device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_light, float2 sample_surface, int sample_num) const
@@ -193,28 +193,29 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
     IntersectRecord light_rec;
 
     r = rec.spawnRay(-r.getDir());
-    if (hit(r, light_rec))
-    {
-        blocked = light_rec.lightidx == idx ? false : (length(rec.pos - r.getOrigin()) < length(rec.pos - lpos) - 0.001f);
-    }
-    light_rec.wo = r;
+    
 
     //Ray wo;
-    float3 f = this_material -> f(-rec.wo.getDir(), r.getDir());
+    float3 f = fabs(dot(rec.normal, r.getDir())) * rec.f(-rec.wo.getDir(), r.getDir());
 
+    if(!isBlack(f))
+        if (hit(r, light_rec))
+        {
+            blocked = light_rec.lightidx == idx ? false : (length(rec.pos - r.getOrigin()) < length(r.getOrigin() - lpos) - 0.01f);
+        }
 
+    light_rec.wo = r;
     res = BLACK;
-    if (!isBlack(f) && !blocked)
+    if (!isBlack(f) && !blocked && !isBlack(color))
     {  
         if (light->isDelta)
         {
-            color = fabs(dot(rec.normal, r.getDir())) * color * f / rec.pdf_light;
+            color =  color * f / rec.pdf_light;
         }
         else
         {
-            rec.pdf_surface = this_material->PDF(-rec.wo.getDir(), r.getDir());
-            color = fabs(dot(rec.normal, r.getDir())) * color * f
-                *  PowerHeuristic(rec.pdf_surface, rec.pdf_light) / rec.pdf_light;
+            rec.pdf_surface = rec.PDF(-rec.wo.getDir(), r.getDir());
+            color =color * f *  PowerHeuristic(rec.pdf_surface, rec.pdf_light) / rec.pdf_light;
         }
         res = color;
     }
@@ -223,7 +224,7 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
     float weight = 1.0f;
     if (!light->isDelta)
     {
-        f = this_material->sample_f(-rec.wo.getDir(), &wi, &rec.pdf_surface, sample_BRDF);
+        f = rec.sample_f(-rec.wo.getDir(), &wi, &rec.pdf_surface, sample_BRDF);
         f *= fabs(dot(rec.normal, wi));
         r = rec.spawnRay(wi);
 

@@ -78,7 +78,7 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
         colideRec.normal = normalize(transpose(inverse(transformation))(norm));
         colideRec.pos = r.getPos(t);
 		colideRec.isLight = false;
-		my_material->setUpNormal(colideRec.normal, normalize(tangent));
+        colideRec.tangent =  normalize(tangent);
 		return true;
     }
 
@@ -287,7 +287,7 @@ CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
             discriminant = sqrt(discriminant);
             t0 = -dotOCD - discriminant;
             t1 = -dotOCD + discriminant;
-            if (t0 < 0)
+            if (t0 < FLOAT_EPISLON)
                 t0 = t1;
         }
         //Need to double-check
@@ -321,7 +321,7 @@ CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
             colideRec.t = t0;
             colideRec.pos = pos;
             colideRec.normal = normal;
-            colideRec.material->setUpNormal(normal, tangent);
+            colideRec.tangent = tangent;
 			colideRec.isLight = false;
             return true;
         }

@@ -21,7 +21,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #ifndef FLOAT_EPISLON
-#define FLOAT_EPISLON (1e-4)
+#define FLOAT_EPISLON (1e-2f)
 #endif
 using namespace std;
 //namespace model
