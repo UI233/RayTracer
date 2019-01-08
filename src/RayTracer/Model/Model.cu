@@ -20,7 +20,7 @@ CUDA_FUNC Triangle::Triangle(float3 p[3], float3 norm[3]) {
     pos[0] = p[0];
     pos[1] = p[1];
     pos[2] = p[2];
-    normal[0] = norm[0];
+	normal[0] = norm[0];
     normal[1] = norm[1];
     normal[2] = norm[2];
 }
@@ -47,17 +47,14 @@ CUDA_FUNC float3 Triangle::interpolatePosition(float3 sample) const
     return transformation(sample.x * pos[0] + sample.y * pos[1] + sample.z * pos[2]);
 }
 
-CUDA_FUNC Triangle& Triangle::operator=(const Triangle& plus) {
-    Triangle t1(plus.pos, plus.normal);
-    return(t1);
-}
 
 CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 
     //colideRec.t = -1.0f;
 	float3 ta=transformation(pos[0]), tb=transformation(pos[1]), tc= transformation(pos[2]);
+	
 
-    float t;
+	float t;
     float3 normal = cross(ta - tc, tb - tc);
     float dot_normal_dir = dot(normal, r.getDir());
     if (fabs(dot_normal_dir) < FLOAT_EPISLON)
@@ -166,9 +163,13 @@ __host__  bool Mesh::readFile(char * path) {
 	}
 	if (vFace.empty())
 		return false;
-	vector<Triangle> tempMesh;
+	//vector<Triangle> tempMesh;
 
 	if (vText.size() != 0) {
+
+		cudaMalloc((void**)& meshTable, sizeof(Triangle)*(vFace.size() + 1));
+
+		Triangle *temp = (Triangle*)malloc(sizeof(Triangle)*(vFace.size() + 1));
 		for (int f = 0; f < vFace.size(); f++) {
 			int n = vFace[f].size();
 
@@ -188,38 +189,42 @@ __host__  bool Mesh::readFile(char * path) {
 				N[v].z = vVertex[iv].z;
 				//	glVertex3f(vVertex[iv].x, vVertex[iv].y, vVertex[iv].z);
 			}
-			Triangle t(V, N);
-			tempMesh.push_back(t);
+
+			Triangle t(V,N);
+
+			t.setUpTransformation(transformation);
+			temp[f] = t;
 			//	glEnd();
 		}
+		cudaMemcpy(meshTable, temp, sizeof(Triangle)*(vFace.size() + 1), cudaMemcpyHostToDevice);
+
 	}
 
 	else {
+
+		cudaMalloc((void**)& meshTable, sizeof(Triangle)*(vFace.size() + 1));
+		Triangle *temp = (Triangle*)malloc(sizeof(Triangle)*(vFace.size() + 1));
 		for (int f = 0; f < vFace.size(); f++) {
 			int n = vFace[f].size();
-			//	glBegin(GL_TRIANGLES);
-
 			float3 V[3], N[3];
 			for (int v = 0; v < n; v++) {
-				int in = vFace[f][v].y;
-				V[v].x = vNorm[in].x;
-				V[v].y = vNorm[in].y;
-				V[v].z = vNorm[in].z;
-
-				int iv = vFace[f][v].x;
+				int in = (vFace[f])[v].y;
+				int iv = (vFace[f])[v].x;
+				if (vNorm.size() > 0) {
+					V[v].x = vNorm[in].x;
+					V[v].y = vNorm[in].y;
+					V[v].z = vNorm[in].z;
+				}
 				N[v].x = vVertex[iv].x;
 				N[v].y = vVertex[iv].y;
 				N[v].z = vVertex[iv].z;
 			}
-			Triangle t(V, N);
-			tempMesh.push_back(t);
-			//	glEnd();
+			Triangle t(N,V);
+			t.setUpTransformation(transformation);
+			temp[f] = t;
 		}
-
-	}
-	cudaMalloc((void**)& meshTable, sizeof(Triangle)*(vFace.size() + 1));
-	for (int i = 0; i < vFace.size(); i++) {
-		meshTable[i] = tempMesh[i];
+		cudaMemcpy(meshTable, temp, sizeof(Triangle)*(vFace.size() + 1), cudaMemcpyHostToDevice);
+		
 	}
 	number = vFace.size();
 	return true;
@@ -229,8 +234,9 @@ __host__  bool Mesh::readFile(char * path) {
 CUDA_FUNC  bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
     bool ishit = false;
     Triangle t;
+//	printf("%d cao\n", number);
     for (int i = 0; i < number; i++) {
-        t = meshTable[i];
+        t = *(meshTable + i);
         ishit |= t.hit(r, colideRec);
 	}
 	
