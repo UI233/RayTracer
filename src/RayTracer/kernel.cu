@@ -328,30 +328,15 @@ void test_for_initialize_scene()
     Material m(&lamb, material::LAMBERTIAN), c(&lamb2, material::LAMBERTIAN), cs(&lamb3, material::LAMBERTIAN);
     Material t[] = { m,c ,cs};
 
-    Triangle tria(
-        make_float3(0.0f, 2.3f, -5.0f),
-        make_float3(2.0f, 0.7f, -5.0f),
-        make_float3(0.0f ,0.0f , -5.0f),
-        make_float3(1.0f, 0.0f ,0.0f),
-        make_float3(0.0f, 1.0f ,0.0f),
-        make_float3(0.0f ,1.0f ,0.0f) 
-        );
-
-    tria.setUpTransformation(
-        mat4(1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f)
-    );
-    TriangleLight trl(make_float3(0.0f, 2.3f, -5.0f),
-        make_float3(2.0f, 0.7f, -5.0f),
-        make_float3(0.0f, 0.0f, -5.0f),  make_float3(1.0f, 1.0f, 1.0f), true);
+    TriangleLight trl(make_float3(0.0f, 2.3f, -3.0f),
+        make_float3(2.0f, 0.7f, -3.0f),
+        make_float3(0.0f, 0.0f, -3.0f),  make_float3(8.0f, 8.0f, 8.0f), true);
 
     Quadratic q(make_float3(0.3f, 0.0f, 0.0f), Sphere);
     q.setUpTransformation(
         mat4(1.0f, 0.0f, 0.0f, 0.0f,
              0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f,1.0f, -10.0f,
+            0.0f, 0.0f,1.0f, -8.0f,
             0.0f,0.0f,0.0f,1.0f)
     );
 
@@ -367,7 +352,7 @@ void test_for_initialize_scene()
     Quadratic m_a[2] = { q,s};
 
     scene.initializeScene(
-        lz, ms, &pl, nullptr, &trl, &tria, nullptr,
+        lz, ms, &pl, nullptr, &trl, nullptr, nullptr,
         m_a, mat_type, t
     );
 

@@ -75,7 +75,7 @@ public:
     }
 
     CUDA_FUNC float PDF(IntersectRecord rec, const float3 &wi)  const{ 
-        return rec.t * rec.t / (area() * fabs(dot(rec.normal , wi))); 
+        return rec.t * rec.t / (area() * fabs(dot(normal , wi))); 
     };
     CUDA_FUNC float3 L(const float3 &r, IntersectRecord *rec = nullptr) const
     {

@@ -222,7 +222,7 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
         else
         {
             rec.pdf_surface = rec.PDF(-rec.wo.getDir(), r.getDir());
-            color =color * f *  PowerHeuristic(rec.pdf_surface, rec.pdf_light) / rec.pdf_light;
+            color = color * f *  PowerHeuristic(rec.pdf_light, rec.pdf_surface) / rec.pdf_light;
         }
         res = color;
     }
@@ -242,7 +242,7 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
             if (!this_material->isSpecular())
             {
                 float pdf = light->PDF(rec, wi);
-                if (fabs(pdf) > 0.001f)
+                if (fabs(pdf) < 0.01f)
                     return res;
                 weight = PowerHeuristic(rec.pdf_surface, pdf);
             }
@@ -253,10 +253,12 @@ CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, 
                 if (rec.lightidx == idx)
                     l = light -> L( -wi, &rec);
                 else
-                    l = light->getLe(r);
+                    l = light -> getLe(r);
 
                 res += l * f * weight / rec.pdf_surface;
             }
+
+            //Add light contribution from material sampling
         }
     }
 

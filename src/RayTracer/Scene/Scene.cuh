@@ -18,12 +18,14 @@ public:
     , TriangleLight *tril, Triangle *tri, Mesh *mesh, Quadratic *qudratic, int material_type[], Material *mat);
     CUDA_FUNC float3 evaluateDirectLight(Light *light, IntersectRecord &ref, float2 sample_light = make_float2(0.0f, 0.0f), 
         float2 sample_BRDF = make_float2(0.0f, 0.0f), int idx = -2, bool isDelta = false) const;
+
     CUDA_FUNC Light* getIdxAreaLight(int idx)
     {
         if (idx >= 0 && idx < light_sz[light::TRIANGLE_LIGHT])
             return tril + idx;
         return  nullptr;
     }
+
     int light_sz_all, model_sz_all;
 private:
     int light_sz[light::TYPE_NUM];

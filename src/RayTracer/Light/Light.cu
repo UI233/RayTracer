@@ -52,7 +52,11 @@ CUDA_FUNC float3 TriangleLight::lightIllumi(IntersectRecord &ref, Ray *wi, float
         return BLACK;
     else *wi = Ray(pos, ref.pos - pos);
 
-    ref.pdf_light = 1.0f / area();
+    float t = ref.t;
+    ref.t = length(ref.pos - pos);
+    //bugs here
+    ref.pdf_light = PDF(ref, wi ->getDir());
+    ref.t = t;
     return illum;
 }
 

@@ -56,7 +56,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
             }
         }
 
-        if (!ishit || bounces > MAX_DEPTH || rec.isLight)
+        if (!ishit || bounces > MAX_DEPTH)
             break;
 
         specular_bounce = rec.material_type & material::SPECULAR;
@@ -78,7 +78,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
         //use brdf to sample new direction
         le = rec.sample_f(-r.getDir(), &wi, &pdf, sample_scatter);
 
-        beta *= le * fabs(dot(r.getDir(), rec.normal)) / pdf;
+        beta *= le * fabs(dot(wi, rec.normal)) / pdf;
         r = rec.spawnRay(wi);
 
         //Russian roulette to determine whether to terminate the routine
