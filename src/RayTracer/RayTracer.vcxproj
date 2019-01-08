@@ -96,6 +96,7 @@
     <CudaCompile Include="Material\Object.cu" />
     <CudaCompile Include="Matrix\Matrix.cu" />
     <CudaCompile Include="Model\Model.cu" />
+    <CudaCompile Include="PiecewiseConstant\PiecewiseConstant.cu" />
     <CudaCompile Include="Ray\IntersectionRecord.cu" />
     <CudaCompile Include="Ray\Ray.cu" />
     <CudaCompile Include="Scene\Scene.cu" />
@@ -110,6 +111,7 @@
     <ClInclude Include="Matrix\Matrix.cuh" />
     <ClInclude Include="Model\Model.cuh" />
     <CudaCompile Include="Ray\Ray.cuh" />
+    <ClInclude Include="PiecewiseConstant\PiecewiseConstant.cuh" />
     <ClInclude Include="PostProcess\PostProcess.cuh" />
     <ClInclude Include="Ray\IntersectionRecord.cuh" />
     <ClInclude Include="Sampler\Sampler.cuh" />

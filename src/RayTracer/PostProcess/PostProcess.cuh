@@ -2,9 +2,19 @@
 #include <helper_math.h>
 #include <cuda_runtime.h>
 #include "surface_functions.h"
+#include "device_atomic_functions.h"
 #ifndef CUDA_FUNC
 #define CUDA_FUNC  __host__ __device__
 #endif // !CUDA_FUNC
+
+
+__device__ __forceinline__ float atomicMaxFloat(float * addr, float value) {
+    float old;
+    old = (value >= 0) ? __int_as_float(atomicMax((int *)addr, __float_as_int(value))) :
+        __uint_as_float(atomicMin((unsigned int *)addr, __float_as_uint(value)));
+
+    return old;
+}
 
 inline __device__ float RGB2Y(const float3 &color)
 {

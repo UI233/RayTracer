@@ -1,5 +1,9 @@
 #include "Light.cuh"
 
+#ifndef INV_PI
+#define INV_PI 0.3183098861837907f
+#endif // !INV_PI
+
 CUDA_FUNC PointLight::PointLight(const float3 &position, const float3 &color) : pos(position), illum(color) {}
 CUDA_FUNC float3 PointLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample) const 
 {
@@ -119,7 +123,7 @@ CUDA_FUNC bool TriangleLight::setUpMaterial(material::MATERIAL_TYPE t, Material 
         num = 0;
         return false;
     }
-    //Todo:Bugs fucking here!
+
     material_type = t;
     Material tmp = *mat;
     cudaMalloc(&tmp.brdfs, num);
@@ -128,4 +132,54 @@ CUDA_FUNC bool TriangleLight::setUpMaterial(material::MATERIAL_TYPE t, Material 
     error = cudaMemcpy(my_material, &tmp, sizeof(Material), cudaMemcpyHostToDevice);
 
     return error == cudaSuccess;
+}
+//sample = (theta, phi)
+CUDA_FUNC float3 EnvironmentLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample)
+{
+    float theta = sample.x * M_PI, phi = 2.0f * sample.y * M_PI;
+    *wi = Ray(wi->getOrigin(), make_float3(sin(theta) * sin(phi),cos(theta), sin(theta) * cos(phi)));
+    int idx = sample.x * height * width + sample.y * width;
+    idx *= 3;
+    //May use MIPMAP
+    return make_float3(img[idx], img[idx + 1], img[idx + 2]);
+}
+
+CUDA_FUNC float EnvironmentLight::PDF(IntersectRecord rec, const float3 &wi)const
+{
+    float3 k = normalize(wi);
+    float phi = 0.0f;
+    float theta = acos(k.y);
+    float sint = sin(theta);
+    float phi = atan2f(k.x, k.z);
+
+    if(sint < 0.0001f)
+        return 0.0f;
+
+    return distribution->PDF(make_float2(phi, theta)) / (2.0f * M_PI * M_PI * sint);
+}
+
+CUDA_FUNC float3 EnvironmentLight::getLe(Ray &r) const
+{
+    return L(r.getDir(), nullptr);
+}
+
+CUDA_FUNC float3 EnvironmentLight::L(const float3 &r, IntersectRecord *rec = nullptr) const
+{
+    float3 k = normalize(r);
+    float phi = 0.0f;
+    int idx;
+    float theta = acos(k.y);
+    float sint = sin(theta);
+    if (sint > 0.001f)
+    {
+        float phi = atan2f(r.x, r.z);
+        if (phi < 0.0f)
+            phi += 2.0f * M_PI;
+        idx = theta  * INV_PI * height * width + phi * INV_PI  * width * 0.5f;
+        idx *= 3;
+    }
+    else
+        idx = 0;
+
+    return make_float3(img[idx], img[idx + 1], img[idx + 2]);
 }

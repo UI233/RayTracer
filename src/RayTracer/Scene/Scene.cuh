@@ -5,14 +5,14 @@
 #ifndef PowerHeuristic(x,y)
 #define PowerHeuristic(x,y) ((x)*(x) / ((x) * (x) + (y) * (y)))
 #endif // !PowerHeuristic(x,y)
-
 class Scene
 {
 public:
     CUDA_FUNC  Scene() = default;
     CUDA_FUNC ~Scene() = default;
     CUDA_FUNC bool hit(Ray &r, IntersectRecord &rec) const;
-    __device__ float3 sampleOneLight(IntersectRecord &rec, float2 sample_light, float2 sample_surface, int sample_num) const;
+    __device__ float3 sampleAllLight(IntersectRecord &rec, StratifiedSampler<TWO> &sample_light, StratifiedSampler<TWO> &sample_surface,
+    curandState *state) const;
     //Load the scene to GPU
     __host__ bool initializeScene(int light_size[], int model_size[],  PointLight *pointl, DirectionalLight *dril
     , TriangleLight *tril, Triangle *tri, Mesh *mesh, Quadratic *qudratic, int material_type[], Material *mat);

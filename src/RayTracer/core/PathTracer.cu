@@ -64,9 +64,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
         //won't sample for perferctly specular surface cause only the wi direction would be accounted 
         if (!specular_bounce)
         {
-            sample_light = sampler_light(cnt_light++, state);
-            sample_scatter = sampler_scatter(cnt_scatter++, state);
-            le = scene.sampleOneLight(rec, sample_light, sample_scatter, sampler_p(cnt_q++) * scene.light_sz_all);
+            le = scene.sampleAllLight(rec, sampler_light, sampler_scatter, state);
             res += beta * le;
         }
         else if(rec.material -> isTrans())

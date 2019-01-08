@@ -63,52 +63,48 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
     return rec.t > 0.001f && rec.t < INF - 0.1f;
 }
 
-__device__ float3 Scene::sampleOneLight(IntersectRecord &rec, float2 sample_light, float2 sample_surface, int sample_num) const
+__device__ float3 Scene::sampleAllLight(IntersectRecord &rec, StratifiedSampler<TWO> &sample_light, StratifiedSampler<TWO> &sample_surface,
+    curandState *state) const
 {
-    static unsigned int num, cnt;
-    num = sample_num % light_sz_all;
-    cnt = 0;
-
+    static int cntl = 0, cnts = 0;
+    float3 res = BLACK;
     Light *obj = nullptr;
     PointLight pl;
     DirectionalLight dl;
     TriangleLight trl;
     int idx;
     bool isDelta;
-    for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM && obj == nullptr; i++)
+    for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
     {
-        if (num >= light_sz[i])
-            num -= light_sz[i];
-        else
+        for(int j = 0; j < light_sz[i];j++)
         {
             switch (light::LIGHT_TYPE(i))
             {
             case light::POINT_LIGHT:
                 isDelta = true;
-                pl =  pointl[num];
+                pl =  pointl[j];
                 obj = &pl;
                 break;
             case light::DIR_LIGHT:
                 isDelta = true;
-                dl =  dirl[num];
+                dl =  dirl[j];
                 obj = &dl;
                 break;
             case light::TRIANGLE_LIGHT:
                 isDelta = false;
-                trl =  tril[num];
+                trl =  tril[j];
                 obj = &trl;
-                idx = num;
+                idx = j;
                 break;
             default:
                 obj =  nullptr;
                 break;
             }
-            break;
+
+            res += evaluateDirectLight(obj, rec, sample_light(cntl++, state), sample_surface(cnts++,state), idx, isDelta);
         }
     }
-
-    return obj ? light_power / obj->getPower(bound2 - bound1) * evaluateDirectLight(obj, rec, sample_light, sample_surface, idx, isDelta) : BLACK;
-
+    return res;
 }
 
 __host__ bool Scene::initializeScene(int light_size[], 

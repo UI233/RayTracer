@@ -1,9 +1,11 @@
 #pragma once
 #include "../Model/Model.cuh"
 #include "thrust/device_vector.h"
+#include "../PiecewiseConstant/PiecewiseConstant.cuh"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "helper_math.h"
+
 #ifndef BLACK
 #define BLACK make_float3(0.0f,0.0f,0.0f)
 #endif // !BLACK
@@ -97,14 +99,19 @@ private:
 class EnvironmentLight : public Light
 {
 public:
-    EnvironmentLight() {};
+    EnvironmentLight(float* texture, int width, int height) {};
     ~EnvironmentLight() = default;
-    CUDA_FUNC virtual float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) const = 0;
+    CUDA_FUNC virtual float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) {
+        return 0;
+    };
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;
-    CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const = 0;
-    CUDA_FUNC float PDF(IntersectRecord rec, const float3 &wi)const { return 0.0f; };
-    CUDA_FUNC float3 getLe(Ray &r) const { return BLACK; };
-    CUDA_FUNC float3 L(const float3 &r, IntersectRecord *rec = nullptr) const { return BLACK; }
+    CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f));
+    CUDA_FUNC float PDF(IntersectRecord rec, const float3 &wi)const;
+    CUDA_FUNC float3 getLe(Ray &r) const;
+    CUDA_FUNC float3 L(const float3 &r, IntersectRecord *rec = nullptr) const;
+//    __host__ bool initialize(char *img, int height, int width,)
 private:
-    char * texture;
+    int height, width;
+    float* img;
+    Distribution2D *distribution;
 };

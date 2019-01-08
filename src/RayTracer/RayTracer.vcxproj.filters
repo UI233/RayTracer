@@ -13,6 +13,7 @@
     <CudaCompile Include="Material\Object.cu" />
     <CudaCompile Include="Ray\IntersectionRecord.cu" />
     <CudaCompile Include="core\PathTracer.cu" />
+    <CudaCompile Include="PiecewiseConstant\PiecewiseConstant.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper_math.h" />
@@ -28,6 +29,7 @@
     <ClInclude Include="Material\Object.cuh" />
     <ClInclude Include="core\PathTracer.cuh" />
     <ClInclude Include="PostProcess\PostProcess.cuh" />
+    <ClInclude Include="PiecewiseConstant\PiecewiseConstant.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\glut\src\gl3w.c" />
