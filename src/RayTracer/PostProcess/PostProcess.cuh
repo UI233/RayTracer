@@ -57,9 +57,9 @@ __global__ void HDRKernel(cudaSurfaceObject_t surface, cudaSurfaceObject_t surfa
     for(int x = stx;x < stx + width_per_thread; x++)
         for (int y = sty; y < sty + height_per_thread; y++)
         {
-            surf2Dread(&color, surface_tmp, x * sizeof(float), y);
+            surf2Dread(&color, surface_tmp, x * sizeof(float4), y);
             tmp = HDR(make_float3(color.x, color.y, color.z), *Ymax);
-            surf2Dwrite(make_float4(tmp.x, tmp.y, tmp.z, 1.0f), surface, x * sizeof(float), y);
+            surf2Dwrite(make_float4(tmp.x, tmp.y, tmp.z, 1.0f), surface, x * sizeof(float4), y);
         }
 
 }
@@ -81,9 +81,9 @@ __global__ void filterKernel(cudaSurfaceObject_t surface_tmp, int width_per_thre
             for(int i = x - 1; i <= x + 1; i++)
                 for (int j = y - 1; j <= y + 1; j++)
                 {
-                    //surf2Dread(&color, surface_tmp, x * sizeof(float), y);
+                    //surf2Dread(&color, surface_tmp, x * sizeof(float4), y);
 
                 }
-            //surf2Dwrite(output , surface, x * sizeof(float), y);
+            //surf2Dwrite(output , surface, x * sizeof(float4), y);
         }
 }
