@@ -100,7 +100,7 @@ CUDA_FUNC float Distribution2D::PDF(const float2 &sample) const
     //while sample.y ... to theta
     int i2 = hmargin -> getCount() * sample.y;
 
-    return condition_w[i1].PDF(i2)/ hmargin->getfunInt();
+    return condition_w[i2].value[i1] / hmargin->getfunInt();
 }
 
 CUDA_FUNC float2 Distribution2D::sample(const float2 &u, float *pdf) const

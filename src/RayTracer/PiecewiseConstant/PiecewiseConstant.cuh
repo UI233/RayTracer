@@ -16,10 +16,10 @@ public:
     CUDA_FUNC int getCount() { return n; }
     CUDA_FUNC bool load2Device();
     CUDA_FUNC float getfunInt() { return funInt; }
+    float *value;
 private:
     int n;
     float funInt;
-    float *value;
     float *cdf;
 };
 

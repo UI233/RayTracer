@@ -7,8 +7,10 @@
 #endif // !maxComp(x)
 
 
-__device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sampler_scatter,  StratifiedSampler<TWO> &sampler_light,StratifiedSampler<ONE> &sampler_p,curandState *state)
-{
+__device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
+{/*
+    StratifiedSampler<TWO> sampler_light(8, state);
+    StratifiedSampler<TWO> sampler_scatter(8, state);*/
     IntersectRecord rec;
     bool ishit, specular_bounce = false;
     int cnt_scatter = 0, cnt_light = 0, cnt_q = 0;//Count the number of samples for sampler
@@ -64,7 +66,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
         //won't sample for perferctly specular surface cause only the wi direction would be accounted 
         if (!specular_bounce)
         {
-            le = scene.sampleAllLight(rec, sampler_light, sampler_scatter, state);
+            le = scene.sampleAllLight(rec,  state);
             res += beta * le;
         }
         else if(rec.material -> isTrans())
@@ -85,11 +87,13 @@ __device__ float3 pathTracer(Ray r, Scene &scene, StratifiedSampler<TWO> &sample
         if (bounces > 3 && max_comp < 1.0f )
         {
             q = (1.0f - max_comp) > 0.5 ? (1.0f - max_comp) : 0.5;
-            if (sampler_p(cnt_q++, state) < q)
+            if (curand_uniform(state) < q)
                 break;
             beta /= 1.0f - q;
         }
     }
-
+/*
+    free(sampler_light.data);
+    free(sampler_scatter.data);*/
     return res;
 }

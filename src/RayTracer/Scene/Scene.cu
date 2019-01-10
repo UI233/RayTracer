@@ -63,8 +63,7 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
     return rec.t > 0.001f && rec.t < INF - 0.1f;
 }
 
-__device__ float3 Scene::sampleAllLight(IntersectRecord &rec, StratifiedSampler<TWO> &sample_light, StratifiedSampler<TWO> &sample_surface,
-    curandState *state) const
+__device__ float3 Scene::sampleAllLight(IntersectRecord &rec,  curandState *state) const
 {
     static int cntl = 0, cnts = 0;
     float3 res = BLACK;
@@ -77,7 +76,9 @@ __device__ float3 Scene::sampleAllLight(IntersectRecord &rec, StratifiedSampler<
     for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
     {
         for(int j = 0; j < light_sz[i];j++)
-        {
+        {   
+            float2 sample_light = make_float2(curand_uniform(state), curand_uniform(state));
+            float2 sample_surface = make_float2(curand_uniform(state), curand_uniform(state));
             switch (light::LIGHT_TYPE(i))
             {
             case light::POINT_LIGHT:
@@ -101,7 +102,7 @@ __device__ float3 Scene::sampleAllLight(IntersectRecord &rec, StratifiedSampler<
                 break;
             }
 
-            res += evaluateDirectLight(obj, rec, sample_light(cntl++, state), sample_surface(cnts++,state), idx, isDelta);
+            res += evaluateDirectLight(obj, rec, sample_light, sample_surface, idx, isDelta);
         }
     }
     return res;
@@ -180,8 +181,8 @@ __host__ bool Scene::initializeScene(int light_size[],
     return error == cudaSuccess;
 }
 
-//Incompleted
-CUDA_FUNC float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, float2 sample_light, float2 sample_BRDF, int idx, bool isDelta) const
+
+__device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, float2 sample_light, float2 sample_BRDF, int idx, bool isDelta) const
 {
     Ray r;
     float3 lpos;

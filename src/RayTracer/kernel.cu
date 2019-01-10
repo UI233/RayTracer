@@ -1,9 +1,9 @@
-﻿#define WIDTH 400
-#define HEIGHT 300
-#define WIDTH_PER_BLOCK  40
-#define HEIGHT_PER_BLOCK  30
+﻿#define WIDTH 600
+#define HEIGHT 450
+#define WIDTH_PER_BLOCK  20
+#define HEIGHT_PER_BLOCK  225
 #define WIDTH_PER_THREADS 2
-#define HEIGHT_PER_THREADS 2
+#define HEIGHT_PER_THREADS 5
 #define NUM 16
 #define MAX_DEPTH 10
 #define SAMPLE 4
@@ -33,7 +33,7 @@ GLuint tex;
 GLuint prog;
 cudaGraphicsResource *cudaTex;
 cudaGraphExec_t exe;
-cudaSurfaceObject_t texture_surface, surface_tmp;
+cudaSurfaceObject_t texture_surface, surface_raw, surface_hdr;
 cudaStream_t stream;
 
 
@@ -42,37 +42,42 @@ __constant__ Camera globalCam;
 //Initialize the state of rand generator
 __global__ void initial(curandState *state, int *time)
 {
-    int idx = (gridDim.x * blockIdx.y + blockIdx.x) * blockDim.x * blockDim.y + (threadIdx.x * blockDim.y + threadIdx.x);
-    curand_init(idx + *time ,0, 0, state + idx);
+    int idx = (gridDim.x * blockIdx.y + blockIdx.x) * blockDim.x * blockDim.y + (threadIdx.x * blockDim.y + threadIdx.y);
+    curand_init(idx + 332 ,idx, 0, state + idx);
 }
 
-__global__ void debug(cudaSurfaceObject_t surface, Scene *scene, curandState *state, int *cnt)
+__global__ void debug(cudaSurfaceObject_t surface, cudaSurfaceObject_t surfacew, Scene *scene, curandState *state, int *cnt)
 {
-    if (threadIdx.x == 0 && blockIdx.x == 0)
-        ++*cnt;
-
+    if (blockIdx.x == 0 && blockIdx.y == 0 && threadIdx.x == 0 && threadIdx.y == 0)
+        ++(*cnt);
     __syncthreads();
     int stx = blockIdx.x * WIDTH_PER_BLOCK + threadIdx.x * WIDTH_PER_THREADS;
     int sty = blockIdx.y * HEIGHT_PER_BLOCK + threadIdx.y * HEIGHT_PER_THREADS;
-    int idx = (gridDim.x * blockIdx.y + blockIdx.x) * blockDim.x * blockDim.y + (threadIdx.x * blockDim.y + threadIdx.x);
+
+    int idx = (gridDim.x * blockIdx.y + blockIdx.x) * blockDim.x * blockDim.y + (threadIdx.x * blockDim.y + threadIdx.y);
     curandState *rstate = state + idx;
     //curand_init(1234, idx, 0, rstate);//Produce many noises after initialization
     IntersectRecord rec;
 
-    StratifiedSampler<TWO> sampler_light(16, rstate);
-    StratifiedSampler<TWO> sampler_surface(16, rstate);
-    StratifiedSampler<ONE> p(8, rstate);
-    float3 tmp;
+    float3 px_color;
     Ray r;
+    float frac1 = 1.0f / *cnt;
+    float frac2 = frac1 * (*cnt - 1);
+    float4 cas;
     for(int x = stx; x < stx +  WIDTH_PER_THREADS; x++)
         for (int y = sty; y < sty + HEIGHT_PER_THREADS; y++)
         {
             r = globalCam.generateRay(x - WIDTH / 2, y - HEIGHT / 2);
-            tmp = pathTracer(r, *scene, sampler_light, sampler_surface, p, state + idx);
-            surf2Dwrite(make_float4(tmp.x, tmp.y, tmp.z, 1.0f), surface, x * sizeof(float4), y);
-            sampler_light.regenerate(rstate);
-            sampler_surface.regenerate(rstate);
-            p.regenerate(rstate);
+            px_color = pathTracer(r, *scene,  state + idx);
+            //I don't know why this if-statement can let those strange white noises disappear...
+            if (px_color.x > 1.0f && px_color.y > 1.0f && px_color.z > 1.0f)
+            {
+                printf("%f %f %f\n", px_color.x, px_color.y, px_color.z);
+                printf("%d %d", x, y);
+            }
+            surf2Dread(&cas, surface, x * sizeof(float4), y);
+            px_color = frac2 * make_float3(cas.x, cas.y, cas.z) + frac1 * px_color;
+            surf2Dwrite(make_float4(px_color.x, px_color.y, px_color.z, 1.0f), surface, x * sizeof(float4), y);
         }
 }
 
@@ -192,7 +197,8 @@ bool initCUDA(GLuint glTex)
     dim3 threadSize(WIDTH_PER_BLOCK / WIDTH_PER_THREADS, HEIGHT_PER_BLOCK / HEIGHT_PER_THREADS);
     int thread_num = blockSize.x * blockSize.y * threadSize.x * threadSize.y;
     //Create the surface bound to OpenGL texture
-    auto error = cudaGLSetGLDevice(0);
+    size_t heap_sz;
+    auto error = cudaDeviceGetLimit(&heap_sz, cudaLimitMallocHeapSize);
     error = cudaGraphicsGLRegisterImage(&cudaTex, tex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsSurfaceLoadStore);
     error = cudaGraphicsMapResources(1, &cudaTex, 0);
 
@@ -209,7 +215,13 @@ bool initCUDA(GLuint glTex)
     cudaChannelFormatDesc channel = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
     error = cudaMallocArray(&arr, &channel, WIDTH, HEIGHT, cudaArraySurfaceLoadStore);
     dsc.res.array.array = arr;
-    error = cudaCreateSurfaceObject(&surface_tmp, &dsc);
+    error = cudaCreateSurfaceObject(&surface_raw, &dsc);
+
+    //Create the surface to Store temporary information
+    channel = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
+    error = cudaMallocArray(&arr, &channel, WIDTH, HEIGHT, cudaArraySurfaceLoadStore);
+    dsc.res.array.array = arr;
+    error = cudaCreateSurfaceObject(&surface_hdr, &dsc);
 
     //Initialize the camera
     Camera cam(make_float3(0.0f, 0.0f, 2.0f), make_float3(0.0f, 0.3f, -1.0f), 2.0f, 0.10f, 1000.0f,
@@ -235,9 +247,9 @@ bool initCUDA(GLuint glTex)
     //Capture the procedure for rendering to create cudaGraph
     //The procedure is render -> HDR -> filter
     cudaStreamBeginCapture(stream);
-    debug <<<blockSize, threadSize, 0, stream>>> (surface_tmp, sce, state, cnt);
-    HDRKernel <<<blockSize, threadSize, 0, stream>>> (surface_tmp, WIDTH_PER_THREADS, HEIGHT_PER_THREADS, WIDTH_PER_BLOCK, HEIGHT_PER_BLOCK);
-    filterKernel <<<blockSize, threadSize, 0, stream>>> (texture_surface, surface_tmp, WIDTH_PER_THREADS, HEIGHT_PER_THREADS, WIDTH_PER_BLOCK, HEIGHT_PER_BLOCK, WIDTH, HEIGHT);
+    debug <<<blockSize, threadSize, 0, stream>>> (surface_raw, texture_surface, sce, state, cnt);
+    HDRKernel <<<blockSize, threadSize, 0, stream>>> (surface_hdr, surface_raw, WIDTH_PER_THREADS, HEIGHT_PER_THREADS, WIDTH_PER_BLOCK, HEIGHT_PER_BLOCK);
+    filterKernel <<<blockSize, threadSize, 0, stream>>> (texture_surface, surface_hdr, WIDTH_PER_THREADS, HEIGHT_PER_THREADS, WIDTH_PER_BLOCK, HEIGHT_PER_BLOCK, WIDTH, HEIGHT);
     cudaStreamEndCapture(stream, &renderProcess);
 
     cudaGraphInstantiate(&exe, renderProcess, nullptr, nullptr, 0);
@@ -257,7 +269,7 @@ void display()
 void test_for_initialize_scene()
 {
     Scene scene;
-    int lz[light::TYPE_NUM] = { 0,1,0 }, ms[model::TYPE_NUM] = { 0,0,2 };
+    int lz[light::TYPE_NUM] = { 0,0,1 }, ms[model::TYPE_NUM] = { 0,0,2 };
     int mat_type[] = { material::LAMBERTIAN , material::LAMBERTIAN, material::LAMBERTIAN };
     Lambertian lamb(make_float3(0.7f, 0.8f, 0.4f)), lamb2(make_float3(1.0f, 0.0f, 0.0f)), lamb3(make_float3(1.0f, 1.0f, 1.0f));
     Material m(&lamb, material::LAMBERTIAN), c(&lamb2, material::LAMBERTIAN), cs(&lamb3, material::LAMBERTIAN);
@@ -277,9 +289,9 @@ void test_for_initialize_scene()
 
     Quadratic s(make_float3(1.0f, 0.0f, 0.0f), Sphere);
     s.setUpTransformation(
-        mat4(1.0f, 0.0f, 0.0f, -2.0f,
-            0.0f, 1.0f, 0.0f, -3.0f,
-            0.0f, 0.0f, 1.0f, -2.0f,
+        mat4(1.0f, 0.0f, 0.0f, -1.0f,
+            0.0f, 1.0f, 0.0f, 2.0f,
+            0.0f, 0.0f, 1.0f, -4.0f,
             0.0f, 0.0f, 0.0f, 1.0f)
     );
 
