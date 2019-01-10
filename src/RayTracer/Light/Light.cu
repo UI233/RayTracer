@@ -1,4 +1,5 @@
 #include "Light.cuh"
+#include "cuda_texture_types.h"
 
 #ifndef INV_PI
 #define INV_PI 0.3183098861837907f
@@ -147,7 +148,6 @@ CUDA_FUNC float3 EnvironmentLight::lightIllumi(IntersectRecord &ref, Ray *wi, fl
 CUDA_FUNC float EnvironmentLight::PDF(IntersectRecord rec, const float3 &wi)const
 {
     float3 k = normalize(wi);
-    float phi = 0.0f;
     float theta = acos(k.y);
     float sint = sin(theta);
     float phi = atan2f(k.x, k.z);
@@ -163,7 +163,7 @@ CUDA_FUNC float3 EnvironmentLight::getLe(Ray &r) const
     return L(r.getDir(), nullptr);
 }
 
-CUDA_FUNC float3 EnvironmentLight::L(const float3 &r, IntersectRecord *rec = nullptr) const
+CUDA_FUNC float3 EnvironmentLight::L(const float3 &r, IntersectRecord *rec) const
 {
     float3 k = normalize(r);
     float phi = 0.0f;

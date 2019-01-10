@@ -101,8 +101,8 @@ class EnvironmentLight : public Light
 public:
     EnvironmentLight(float* texture, int width, int height) {};
     ~EnvironmentLight() = default;
-    CUDA_FUNC virtual float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) {
-        return 0;
+    CUDA_FUNC float3 getPower(float3 bound_length = make_float3(0.0f, 0.0f, 0.0f)) {
+        return make_float3(0.0f, 0.0f ,0.0f);
     };
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     CUDA_FUNC float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f));

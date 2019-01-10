@@ -3,10 +3,19 @@
 #include <cuda_runtime.h>
 #include "surface_functions.h"
 #include "device_atomic_functions.h"
+
 #ifndef CUDA_FUNC
 #define CUDA_FUNC  __host__ __device__
 #endif // !CUDA_FUNC
 
+CUDA_FUNC float3 saturate(float3 color)
+{
+    return make_float3(
+        fminf(1.0f, fmaxf(0.0f, color.x)),
+        fminf(1.0f, fmaxf(0.0f, color.y)),
+        fminf(1.0f, fmaxf(0.0f, color.z))
+    );
+}
 
 __device__ __forceinline__ float atomicMaxFloat(float * addr, float value) {
     float old;
@@ -15,51 +24,45 @@ __device__ __forceinline__ float atomicMaxFloat(float * addr, float value) {
 
     return old;
 }
-
-inline __device__ float RGB2Y(const float3 &color)
+//Use ACES tone mapping
+//Inspired by https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl
+__device__ float3 HDR(float3 color)
 {
-	float Y;
-	Y = 0.299f * color.x + 0.587f * color.y +
-		0.114f * color.z;
-	return Y;
+    auto RRT_ODF_fit = [](float3 v) {
+        return (v * (v + make_float3(0.0245786f, 0.0245786f, 0.0245786f) - make_float3(0.000090537f, 0.000090537f, 0.000090537f)) / 
+            (v * (v * 0.983729f + 0.4329510f) + 0.238081f));
+    };
+
+    color = make_float3(
+        0.59719f * color.x + 0.35458f * color.y + 0.04823f * color.z,
+        0.07600f * color.x + 0.90834f * color.y + 0.01566f * color.z,
+        0.02840f * color.x + 0.13383f * color.y + 0.83777f * color.z
+    );
+
+    color = RRT_ODF_fit(color);
+
+    color = make_float3(
+        1.60475 * color.x + -0.53108 * color.y + -0.07367 * color.z,
+        -0.10208 * color.x + 1.10813 * color.y + -0.00605 * color.z,
+        -0.00327 * color.x + -0.07276 * color.y + 1.07602 * color.z
+        );
+
+    return saturate(color);
 }
 
-//Incompleted
-CUDA_FUNC float3 HDR(float3 color, float Ymax)
-{	
-	float3 Y;
-	Y.x = 0.299f * color.x + 0.587f * color.y +
-		0.114f * color.z;
-	Y.y = -0.147f * color.x - 0.289f * color.y +
-		0.435f * color.z;
-	Y.z = 0.615f * color.x - 0.515f * color.y -
-		0.1f * color.z;
-	float a;
-    if (Ymax == 0.0f)
-        return make_float3(0.0f, 0.0f, 0.0f);
-
-	Y.x = logf(Y.x) / logf(Ymax);
-
-	float3 R;
-	R.x = fminf(1.0f, fmaxf(0.0f, Y.x + 1.1398f * Y.z));
-	R.y = fminf(1.0f, fmaxf(0.0f, 0.9996 * Y.x - 0.3954 * Y.y - 0.5805 * Y.z));
-	R.z = fminf(1.0f, fmaxf(0.0f, 1.002 * Y.x + 2.0361 * Y.y - 0.0005 * Y.z));
-	return R;
-}
-
-__global__ void HDRKernel(cudaSurfaceObject_t surface_tmp, int width_per_thread, int height_per_thread, int width_per_block, int height_per_block,  float *Ymax)
+__global__ void HDRKernel(cudaSurfaceObject_t surface, int width_per_thread, int height_per_thread, int width_per_block, int height_per_block)
 {
     int stx = blockIdx.x * width_per_block + threadIdx.x * width_per_thread;
     int sty = blockIdx.y * height_per_block + threadIdx.y * height_per_thread;
-
+    //printf("%f ", *Ymax);
     float4 color;
     float3 tmp;
     for(int x = stx;x < stx + width_per_thread; x++)
         for (int y = sty; y < sty + height_per_thread; y++)
         {
-            surf2Dread(&color, surface_tmp, x * sizeof(float4), y);
-            tmp = HDR(make_float3(color.x, color.y, color.z), *Ymax);
-            surf2Dwrite(make_float4(tmp.x, tmp.y, tmp.z, 1.0f), surface_tmp, x * sizeof(float4), y);
+            surf2Dread(&color, surface, x * sizeof(float4), y);
+            tmp = HDR(make_float3(color.x, color.y, color.z));
+            surf2Dwrite(make_float4(tmp.x, tmp.y, tmp.z, 1.0f), surface, x * sizeof(float4), y);
         }
 
 }
