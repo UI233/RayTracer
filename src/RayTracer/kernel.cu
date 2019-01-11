@@ -1,9 +1,9 @@
-﻿#define WIDTH 600
-#define HEIGHT 450
-#define WIDTH_PER_BLOCK  20
-#define HEIGHT_PER_BLOCK  225
-#define WIDTH_PER_THREADS 2
-#define HEIGHT_PER_THREADS 5
+﻿#define WIDTH 300
+#define HEIGHT 300
+#define WIDTH_PER_BLOCK  300
+#define HEIGHT_PER_BLOCK  1
+#define WIDTH_PER_THREADS 1
+#define HEIGHT_PER_THREADS 1
 #define NUM 16
 #define MAX_DEPTH 10
 #define SAMPLE 4
@@ -24,7 +24,8 @@
 #include "PostProcess/PostProcess.cuh"
 #include <iostream>
 #include <ctime>
-
+#define STB_IMAGE_IMPLEMENTATION
+#include "tool/stb_image.h"
 
 curandState *state;
 float *data_tmp;//store the rgb value for scene
@@ -70,13 +71,16 @@ __global__ void debug(cudaSurfaceObject_t surface, cudaSurfaceObject_t surfacew,
             r = globalCam.generateRay(x - WIDTH / 2, y - HEIGHT / 2);
             px_color = pathTracer(r, *scene,  state + idx);
             //I don't know why this if-statement can let those strange white noises disappear...
-            if (px_color.x > 1.0f && px_color.y > 1.0f && px_color.z > 1.0f)
+            if (px_color.x > 10.0f && px_color.y > 10.0f && px_color.z > 10.0f)
             {
                 printf("%f %f %f\n", px_color.x, px_color.y, px_color.z);
                 printf("%d %d", x, y);
             }
+
             surf2Dread(&cas, surface, x * sizeof(float4), y);
+            
             px_color = frac2 * make_float3(cas.x, cas.y, cas.z) + frac1 * px_color;
+           // surf2Dwrite(make_float4(px_color.x, px_color.y, px_color.z, 1.0f), surfacew, x * sizeof(float4), y);
             surf2Dwrite(make_float4(px_color.x, px_color.y, px_color.z, 1.0f), surface, x * sizeof(float4), y);
         }
 }
@@ -89,6 +93,7 @@ GLFWwindow* glEnvironmentSetup();
 bool initCUDA(GLuint glTex);
 void test_for_initialize_scene();
 Scene *sce;
+EnvironmentLight *e;
 
 int main(int argc, char **argv)
 {
@@ -117,6 +122,9 @@ int main(int argc, char **argv)
 bool renderScene(bool changed)
 {
     cudaError_t error;
+    //The information for kernel
+    dim3 blockSize(WIDTH / WIDTH_PER_BLOCK, HEIGHT / HEIGHT_PER_BLOCK);
+    dim3 threadSize(WIDTH_PER_BLOCK / WIDTH_PER_THREADS, HEIGHT_PER_BLOCK / HEIGHT_PER_THREADS);
 
     cudaGraphLaunch(exe, stream);
     error = cudaStreamSynchronize(stream);
@@ -237,8 +245,6 @@ bool initCUDA(GLuint glTex)
     //Initialize camera
     error = cudaMemcpyToSymbol(globalCam, &cam, sizeof(Camera));
 
-    /*error = cudaMalloc(&data_tmp, sizeof(float) * HEIGHT * WIDTH * 3);
-    error = cudaMemset(data_tmp, 0, sizeof(float) * HEIGHT * WIDTH * 3);*/
     //Initialize the count
     error = cudaMalloc(&cnt, sizeof(int));
     error = cudaMemset(cnt, 0, sizeof(int));
@@ -268,8 +274,12 @@ void display()
 
 void test_for_initialize_scene()
 {
+    int width, height, chanel;
+    float * tmp = stbi_loadf("environment.png", &width, &height, &chanel, 4);
+    EnvironmentLight light(tmp, width, height);
+    STBI_FREE(tmp);
     Scene scene;
-    int lz[light::TYPE_NUM] = { 0,0,1 }, ms[model::TYPE_NUM] = { 0,0,2 };
+    int lz[light::TYPE_NUM] = { 0,0,0,1 }, ms[model::TYPE_NUM] = { 0,0,2 };
     int mat_type[] = { material::LAMBERTIAN , material::LAMBERTIAN, material::LAMBERTIAN };
     Lambertian lamb(make_float3(0.7f, 0.8f, 0.4f)), lamb2(make_float3(1.0f, 0.0f, 0.0f)), lamb3(make_float3(1.0f, 1.0f, 1.0f));
     Material m(&lamb, material::LAMBERTIAN), c(&lamb2, material::LAMBERTIAN), cs(&lamb3, material::LAMBERTIAN);
@@ -301,7 +311,7 @@ void test_for_initialize_scene()
     DirectionalLight disl(make_float3(0.0f, -1.0f, 0.0f), make_float3(5.0f, 5.0f, 5.0f));
 
     scene.initializeScene(
-        lz, ms, &pl, &disl, &trl, nullptr, nullptr,
+        lz, ms, &pl, &disl, &trl, &light, nullptr, nullptr,
         m_a, mat_type, t
     );
 

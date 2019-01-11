@@ -24,45 +24,34 @@ __device__ __forceinline__ float atomicMaxFloat(float * addr, float value) {
 
     return old;
 }
-//Use ACES tone mapping
-//Inspired by https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl
-__device__ float3 HDR(float3 color)
+//Use Filmic ACES tone mapping
+//From https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+__device__ __forceinline__ float3 HDR(float3 x)
 {
-    auto RRT_ODF_fit = [](float3 v) {
-        return (v * (v + make_float3(0.0245786f, 0.0245786f, 0.0245786f) - make_float3(0.000090537f, 0.000090537f, 0.000090537f)) / 
-            (v * (v * 0.983729f + 0.4329510f) + 0.238081f));
-    };
-
-    color = make_float3(
-        0.59719f * color.x + 0.35458f * color.y + 0.04823f * color.z,
-        0.07600f * color.x + 0.90834f * color.y + 0.01566f * color.z,
-        0.02840f * color.x + 0.13383f * color.y + 0.83777f * color.z
-    );
-
-    color = RRT_ODF_fit(color);
-
-    color = make_float3(
-        1.60475 * color.x + -0.53108 * color.y + -0.07367 * color.z,
-        -0.10208 * color.x + 1.10813 * color.y + -0.00605 * color.z,
-        -0.00327 * color.x + -0.07276 * color.y + 1.07602 * color.z
-        );
-
-    return saturate(color);
+    static constexpr float a = 2.51f;
+    static constexpr float b = 0.03f;
+    static constexpr float c = 2.43f;
+    static constexpr float d = 0.59f;
+    static constexpr float e = 0.14f;
+    return saturate((x*(a*x + b)) / (x*(c*x + d) + e));
 }
 
-__global__ void HDRKernel(cudaSurfaceObject_t surface, int width_per_thread, int height_per_thread, int width_per_block, int height_per_block)
+__global__ void HDRKernel(cudaSurfaceObject_t surface_w, cudaSurfaceObject_t surface_r, int width_per_thread, int height_per_thread, int width_per_block, int height_per_block)
 {
     int stx = blockIdx.x * width_per_block + threadIdx.x * width_per_thread;
     int sty = blockIdx.y * height_per_block + threadIdx.y * height_per_thread;
     //printf("%f ", *Ymax);
     float4 color;
     float3 tmp;
+    float gamma = 1.0f / 2.2f;
+
     for(int x = stx;x < stx + width_per_thread; x++)
         for (int y = sty; y < sty + height_per_thread; y++)
         {
-            surf2Dread(&color, surface, x * sizeof(float4), y);
+            surf2Dread(&color, surface_r, x * sizeof(float4), y);
             tmp = HDR(make_float3(color.x, color.y, color.z));
-            surf2Dwrite(make_float4(tmp.x, tmp.y, tmp.z, 1.0f), surface, x * sizeof(float4), y);
+            surf2Dwrite(make_float4(tmp.x, tmp.y, tmp.z, 1.0f), surface_w, x * sizeof(float4), y);
+        
         }
 
 }

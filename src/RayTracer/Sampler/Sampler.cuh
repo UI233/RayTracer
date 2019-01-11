@@ -17,12 +17,13 @@ class StratifiedSampler
 {
 public:
     CUDA_FUNC StratifiedSampler() = delete;
-    CUDA_FUNC  StratifiedSampler(int sz, curandState *state) = delete;
+    CUDA_FUNC  StratifiedSampler(int sz, curandState *state) = 0;
     CUDA_FUNC ~StratifiedSampler() = delete;
 
-    __device__ float operator()(int i, curandState *state) const = delete;
-private:
+    __device__ float operator()(int i, curandState *state) const = 0;
+
     float *data;
+private:
     int size;
 };
 
@@ -47,17 +48,14 @@ public:
         for (int i = 0; i < sz; i++)
         {
             idx = i + (int)((curand_uniform(state) / maxn) * (sz - i));
+            idx %= sz;
             tmp = data[idx];
             data[idx] = i;
             data[i] = tmp;
         }
     }
 
-    CUDA_FUNC ~StratifiedSampler()
-    {
-        if (data)
-            free(data);
-    }
+    CUDA_FUNC ~StratifiedSampler() = default;
 
     __device__ float operator()(int i, curandState *state = NULL) const
     {
@@ -84,13 +82,14 @@ public:
         for (int i = 0; i < size; i++)
         {
             idx = i + (int)(curand_uniform(state) * (size - i));
+            idx %= size;
             tmp = data[idx];
             data[idx] = i;
             data[i] = tmp;
         }
     }
-private:
     float *data;
+private:
     int size;
 };
 
@@ -119,22 +118,20 @@ public:
         for (int i = 0; i < sz; i++)
         {
             idx = i + (int)((curand_uniform(state)) * (sz - i));
+            idx %= sz;
             temp = data[2 * i];
             data[2 * i] = data[2 * idx];
             data[2 * idx] = temp;
 
             idx = i + (int)((curand_uniform(state) ) * (sz - i));
+            idx %= sz;
             temp = data[2 * i + 1];
             data[2 * i + 1] = data[2 * idx + 1];
             data[2 * idx + 1] = temp;
         }
     }
 
-    CUDA_FUNC ~StratifiedSampler()
-    {
-        if (data)
-            free(data);
-    }
+    CUDA_FUNC ~StratifiedSampler() = default;
 
     __device__ float2 operator()(int i, curandState *state = NULL) const
     {
@@ -165,18 +162,20 @@ public:
         for (int i = 0; i < size; i++)
         {
             idx = i + (int)(curand_uniform(state) * (size - i));
+            idx %= size;
             temp = data[2 * i];
             data[2 * i] = data[2 * idx];
             data[2 * idx] = temp;
 
             idx = i + (int)((curand_uniform(state) * (size - i)));
+            idx %= size;
             temp = data[2 * i + 1];
             data[2 * i + 1] = data[2 * idx + 1];
             data[2 * idx + 1] = temp;
         }
     }
-private:
     float *data;
+private:
     int size;
 };
 
@@ -203,11 +202,13 @@ public:
         for (int i = 0; i < 32; i++)
         {
             idx = i + (int)((curand_uniform(state) * (32 - i)));
+            idx %= 32;
             temp = data[2 * i];
             data[2 * i] = data[2 * idx];
             data[2 * idx] = temp;
 
             idx = i + (int)((curand_uniform(state) * (32 - i)));
+            idx %= 32;
             temp = data[2 * i + 1];
             data[2 * i + 1] = data[2 * idx + 1];
             data[2 * idx + 1] = temp;
@@ -228,7 +229,7 @@ public:
         }
     }
 
-private:
     float data[32];
+private:
     int size;
 };

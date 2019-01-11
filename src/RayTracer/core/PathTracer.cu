@@ -55,6 +55,12 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
             {
                 //Debug
                 //ToDo : Add Light from environment, infinite area light for example
+                Light *tmp = scene.getEnvironmentLight();
+                if (tmp)
+                {
+                    EnvironmentLight temp = *(EnvironmentLight *)tmp;
+                    res += beta * temp.getLe(r);
+                }
             }
         }
 
@@ -92,8 +98,6 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
             beta /= 1.0f - q;
         }
     }
-/*
-    free(sampler_light.data);
-    free(sampler_scatter.data);*/
+
     return res;
 }
