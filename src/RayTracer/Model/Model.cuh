@@ -63,15 +63,17 @@ public:
      ~Triangle() = default;
 	 CUDA_FUNC Triangle(float3 a, float3 b, float3 c, float3 norm[3]);
      CUDA_FUNC Triangle(float3 a, float3 b, float3 c, float3 norma, float3 normb, float3 normc);
+	 CUDA_FUNC Triangle(float2 t[3], float3 p[3], float3 norm[3]);
 	 CUDA_FUNC Triangle(float3 p[3], float3 norm[3]);
 	 CUDA_FUNC Triangle(const float3 p[3], const float3 norm[3]);
 	 CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
      CUDA_FUNC float area() const override;
      CUDA_FUNC float3 interpolatePosition(float3 sample) const;
 private:
+	float2 vText[3];
     float3 pos[3];
     float3 normal[3];
-    float dummy[4];       //Make the memory cost for per Triangle a 2^n byte size
+//    float dummy[4];       //Make the memory cost for per Triangle a 2^n byte size
 };
 
 class Mesh : public Model {
@@ -87,6 +89,7 @@ public:
     }
     CUDA_FUNC float area() const override { return 0.0f; };
 private:
+	cudaTextureObject_t Texture;
     Triangle* meshTable;
     int number = 0;
 };

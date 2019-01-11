@@ -15,7 +15,17 @@ CUDA_FUNC Triangle::Triangle(float3 a, float3 b, float3 c, float3 norma, float3 
     normal[1] = normb;
     normal[2] = normc;
 }
-
+CUDA_FUNC Triangle::Triangle(float2 t[3],float3 p[3], float3 norm[3]) {
+	vText[0] = t[0];
+	vText[1] = t[1];
+	vText[2] = t[2];
+	pos[0] = p[0];
+	pos[1] = p[1];
+	pos[2] = p[2];
+	normal[0] = norm[0];
+	normal[1] = norm[1];
+	normal[2] = norm[2];
+}
 CUDA_FUNC Triangle::Triangle(float3 p[3], float3 norm[3]) {
     pos[0] = p[0];
     pos[1] = p[1];
@@ -68,13 +78,15 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
     float s1 = length(cross(pos - ta, pos -tb));
     float s2 = length(cross(pos - tc, pos - ta));
     float s3 = length(cross(pos - tc, pos - tb));
-
+	
+	float2 pvText;
 
     if (fabs(s1 + s2 + s3 - S) > 0.001f)
         return false;
 
     float m1 = s3 / S, m2 = s2 / S, m3 = 1.0f - m1 - m2;
-
+	pvText = vText[0] * m1 + vText[1] * m2 + vText[2] * m3;
+	//Todo: load this to colideRec
     if (t > FLOAT_EPISLON && t < colideRec.t)
     {
         colideRec.material = my_material;
@@ -174,15 +186,21 @@ __host__  bool Mesh::readFile(char * path) {
 			int n = vFace[f].size();
 
 			float3 V[3], N[3];
+			float2 T[3];
 			for (int v = 0; v < n; v++) {
 				int it = vFace[f][v].z;
+				if (vText.size() > 0) {
+					T[v].x = vText[it].x;
+					T[v].y = vText[it].y;
+				}
 				//	glTexCoord2f(vText[it].x, vText[it].y);
 
 				int in = vFace[f][v].y;
-				V[v].x = vNorm[in].x;
-				V[v].y = vNorm[in].y;
-				V[v].z = vNorm[in].z;
-
+				if (vNorm.size() > 0) {
+					V[v].x = vNorm[in].x;
+					V[v].y = vNorm[in].y;
+					V[v].z = vNorm[in].z;
+				}
 				int iv = vFace[f][v].x;
 				N[v].x = vVertex[iv].x;
 				N[v].y = vVertex[iv].y;
@@ -190,7 +208,7 @@ __host__  bool Mesh::readFile(char * path) {
 				//	glVertex3f(vVertex[iv].x, vVertex[iv].y, vVertex[iv].z);
 			}
 
-			Triangle t(V,N);
+			Triangle t(T,V,N);
 
 			t.setUpTransformation(transformation);
 			temp[f] = t;
