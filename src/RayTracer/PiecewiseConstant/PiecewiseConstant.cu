@@ -17,6 +17,8 @@ CUDA_FUNC Distribution::Distribution(int num, float *v) : n(num)
     funInt = cdf[n];
     for (int i = 1; i <= n; i++)
         cdf[i] = funInt == 0 ? (float) i / n  : cdf[i] / funInt;
+
+    cdf[n] = 1.0f;
 }
 
 CUDA_FUNC float Distribution::sample(const float &u, float *pdf, int *offset) const
@@ -30,7 +32,8 @@ CUDA_FUNC float Distribution::sample(const float &u, float *pdf, int *offset) co
             r = mid - 1;
         else l = mid + 1;
     }
-
+    if (r == n)
+        --r;
     *offset = r;
     *pdf = value[r] / funInt;
     return cdf[r + 1] == cdf[r] ? r : r + (u - cdf[r]) / (cdf[r + 1] - cdf[r]);
@@ -61,7 +64,6 @@ __host__ bool Distribution::load2Device()
 
 CUDA_FUNC Distribution2D::Distribution2D(float *img, int w, int h):width(w), height(h)
 {
-    
     funInt = 0.0f;
     float *v_tmp = (float*)malloc(sizeof(float)* height);
     float *condition_tmp = (float *)malloc(sizeof(float) * width);
@@ -72,10 +74,10 @@ CUDA_FUNC Distribution2D::Distribution2D(float *img, int w, int h):width(w), hei
     {
         //P[Height]
         float sum = 0.0f;
-        //width phi[0, 2PI], theta [0, PI]
+        //width phi[0, 2PI], height theta [0, PI]
         for (int j = 0; j < width; j++)
         {
-            int idx = 3 * (i * width + j);
+            int idx = 4 * (i * width + j);
             tmp = rgb2y_xyz(make_float3(img[idx], img[idx + 1], img[idx + 2]));
             condition_tmp[j] = tmp;
             funInt += tmp;

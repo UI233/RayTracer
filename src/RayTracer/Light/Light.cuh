@@ -18,6 +18,7 @@ namespace light
         POINT_LIGHT,
         DIR_LIGHT,
         TRIANGLE_LIGHT,
+        ENVIRONMENT_LIGHT,
         TYPE_NUM
     };
 }
@@ -88,6 +89,8 @@ public:
     };
     __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *mat);
 
+    __device__ float3 getLe(Ray &r) const { return BLACK; };
+
 private:
     float3 pos[3];
     float3 normal;
@@ -103,6 +106,7 @@ public:
     CUDA_FUNC EnvironmentLight(float* texture, int w, int h):height(h), width(w) {
         setUp(texture, w, h);
     };
+    CUDA_FUNC EnvironmentLight() = default;
     CUDA_FUNC ~EnvironmentLight() = default;
     //CUDA_FUNC virtual float3 getDir(float3 pos = make_float3(0.0f, 0.0f, 0.0f), float2 sample = make_float2(0.0f, 0.0f)) const = 0;
     __device__ float3 lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample = make_float2(0.0f, 0.0f)) const;
@@ -115,9 +119,9 @@ public:
     __device__ float3 L(const float3 &r, IntersectRecord *rec = nullptr) const;
     __host__ bool setUp(float *img, int width, int height);
 //    __host__ bool initialize(char *img, int height, int width,)
+    cudaTextureObject_t img;
 private:
     int height, width;
     cudaArray_t array;
-    cudaTextureObject_t img;
     Distribution2D *distribution;
 };

@@ -40,3 +40,8 @@ src/RayTracer/x64/Debug/RayTracer.lib
 src/RayTracer/x64/Debug/vc141.idb
 src/RayTracer/x64/Debug/vc141.idb
 *.idb
+src/RayTracer/a.png
+src/RayTracer/tool/stb_image_write.h
+src/RayTracer/tool/stb_image.h
+src/a.png
+src/RayTracer/sb.ppm

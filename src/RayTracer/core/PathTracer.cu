@@ -1,6 +1,6 @@
 #include "PathTracer.cuh"
 #ifndef MAX_DEPTH
-#define MAX_DEPTH 24
+#define MAX_DEPTH 12
 #endif // !MAX_DEPTH
 #ifndef maxComp(vec)
 #define maxComp(vec) ((vec).x > (vec).y ? ((vec).x > (vec).z ? (vec).x : (vec).z) : ((vec).y > (vec).z ? (vec).y : (vec).z))
@@ -16,8 +16,8 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
     int cnt_scatter = 0, cnt_light = 0, cnt_q = 0;//Count the number of samples for sampler
 
     float pdf;
-    float3 le,wi;   
-    float3 beta = make_float3(1.0f, 1.0f, 1.0f), rrbeta;
+    float3 le = BLACK,wi;   
+    float3 beta = make_float3(1.0f, 1.0f, 1.0f), rrbeta = BLACK;
     float3 res = BLACK;
     float2 sample_light, sample_scatter;//Store the samples
     float q, max_comp;
@@ -53,8 +53,12 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
             }
             else
             {
-                //Debug
-                //ToDo : Add Light from environment, infinite area light for example
+                Light *tmp = scene.getEnvironmentLight();
+                if (tmp)
+                {
+                    EnvironmentLight temp = *(EnvironmentLight *)tmp;
+                    res += beta * temp.getLe(r);
+                }
             }
         }
 
@@ -92,8 +96,6 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
             beta /= 1.0f - q;
         }
     }
-/*
-    free(sampler_light.data);
-    free(sampler_scatter.data);*/
+
     return res;
 }

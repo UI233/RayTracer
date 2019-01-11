@@ -353,7 +353,7 @@ CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
             colideRec.t = t0;
             colideRec.pos = pos;
             colideRec.normal = normal;
-            colideRec.tangent = tangent;
+            colideRec.tangent = normalize(tangent);
 			colideRec.isLight = false;
             return true;
         }
@@ -390,7 +390,6 @@ __host__ bool Model::setUpMaterial(material::MATERIAL_TYPE t, Material *mat)
         num = 0;
         return false;
     }
-    //Todo:Bugs fucking here!
     material_type = t;
     Material tmp = *mat;
     cudaMalloc(&tmp.brdfs, num);

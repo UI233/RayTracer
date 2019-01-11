@@ -71,6 +71,7 @@ __device__ float3 Scene::sampleAllLight(IntersectRecord &rec,  curandState *stat
     PointLight pl;
     DirectionalLight dl;
     TriangleLight trl;
+    EnvironmentLight e_l;
     int idx;
     bool isDelta;
     for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
@@ -97,6 +98,12 @@ __device__ float3 Scene::sampleAllLight(IntersectRecord &rec,  curandState *stat
                 obj = &trl;
                 idx = j;
                 break;
+            case light::ENVIRONMENT_LIGHT:
+                isDelta = false;
+                idx = j + light_sz[light::TRIANGLE_LIGHT];
+                e_l = el[j];
+                obj = &e_l;
+                break;
             default:
                 obj =  nullptr;
                 break;
@@ -110,7 +117,7 @@ __device__ float3 Scene::sampleAllLight(IntersectRecord &rec,  curandState *stat
 
 __host__ bool Scene::initializeScene(int light_size[], 
     int model_size[], PointLight *point_light, 
-    DirectionalLight *dir_light, TriangleLight *tri_light, 
+    DirectionalLight *dir_light, TriangleLight *tri_light, EnvironmentLight *envl,
     Triangle *triangles, Mesh *meshes, 
     Quadratic *quadratic, int mat_type[], Material *mat)
 {
@@ -119,7 +126,7 @@ __host__ bool Scene::initializeScene(int light_size[],
     error = cudaMalloc(&pointl, sizeof(PointLight) * light_size[0]);
     error = cudaMalloc(&dirl, sizeof(DirectionalLight) * light_size[1]);
     error = cudaMalloc(&tril, sizeof(TriangleLight) * light_size[2]);
-    //error = cudaMalloc(&pointl, sizeof(PointLight) * light_size[3]);
+    error = cudaMalloc(&el, sizeof(EnvironmentLight) * light_size[3]);
     
     error = cudaMalloc(&tri, sizeof(Triangle) * model_size[0]);
     error = cudaMalloc(&mesh, sizeof(Mesh) * model_size[1]);
@@ -140,7 +147,8 @@ __host__ bool Scene::initializeScene(int light_size[],
     error = cudaMemcpy(pointl, point_light, sizeof(PointLight) * light_size[0], cudaMemcpyHostToDevice);
     error = cudaMemcpy(dirl, dir_light, sizeof(DirectionalLight) * light_size[1], cudaMemcpyHostToDevice);
     error = cudaMemcpy(tril, tri_light, sizeof(TriangleLight) * light_size[2], cudaMemcpyHostToDevice);
-	
+    error = cudaMemcpy(el, envl, sizeof(EnvironmentLight) * light_size[3], cudaMemcpyHostToDevice);
+
     error = cudaMemcpy(tri, triangles, sizeof(Triangle) * model_size[0], cudaMemcpyHostToDevice);
     error = cudaMemcpy(mesh, meshes, sizeof(Mesh) * model_size[1], cudaMemcpyHostToDevice);
     error = cudaMemcpy(quad, quadratic, sizeof(Quadratic) * model_size[2], cudaMemcpyHostToDevice);
@@ -168,6 +176,10 @@ __host__ bool Scene::initializeScene(int light_size[],
             for (j = 0; j < light_sz[i]; j++)
                 light_power += tri_light[j].getPower();
             break;
+        case light::ENVIRONMENT_LIGHT:
+            for (j = 0; j < light_sz[i]; j++)
+                light_power += envl[j].getPower();
+            break;
         default:
             break;
         }
@@ -182,16 +194,15 @@ __host__ bool Scene::initializeScene(int light_size[],
 }
 
 
-__device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, float2 sample_light, float2 sample_BRDF, int idx, bool isDelta) const
+__device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, float2 sample_light, float2 sample_BRDF, int idx, bool isDelta) const
 {
     Ray r;
     float3 lpos;
-    float3 color, res;
+    float3 color, res = BLACK;
     bool blocked = false;
 
     color = light->lightIllumi(rec, &r, sample_light);
     lpos = r.getOrigin();
-
 
     Material *this_material = rec.material;
     IntersectRecord light_rec;
@@ -222,9 +233,11 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec,
             color = color * f *  PowerHeuristic(rec.pdf_light, rec.pdf_surface) / rec.pdf_light;
         }
         res = color;
+        //if (res.y < +0.0f)
+        //    printf("2\n");
     }
     float3 wi;
-    
+    //Bugs!!!
     float weight = 1.0f;
     if (!isDelta)
     {
@@ -244,18 +257,16 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec,
                 weight = PowerHeuristic(rec.pdf_surface, pdf);
             }
 
-            float3 l;
-            if (hit(r, rec))
+            float3 l = BLACK;
+            if (hit(r, rec) && rec.lightidx == idx)
             {
-                if (rec.lightidx == idx)
                     l = light -> L( -wi, &rec);
-                else
-                    l = light -> getLe(r);
-
-                res += l * f * weight / rec.pdf_surface;
             }
+            else
+                l = light->getLe(r);
 
-            //Add light contribution from material sampling
+            res += l * f * weight / rec.pdf_surface;
+
         }
     }
 

@@ -14,7 +14,8 @@ namespace material
     {
         LAMBERTIAN = 1,
         FRESNEL = 7, // 111
-        GGX = 9,//1001
+        Cock = 9,//1001
+        GGX,
         MATERIAL_NUM = 3
     };
 }

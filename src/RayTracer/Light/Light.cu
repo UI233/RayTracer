@@ -135,14 +135,21 @@ __host__ bool TriangleLight::setUpMaterial(material::MATERIAL_TYPE t, Material *
 //sample = (theta, phi)
 __device__ float3 EnvironmentLight::lightIllumi(IntersectRecord &ref, Ray *wi, float2 sample) const
 {
-    float theta = sample.x * M_PI, phi = 2.0f * sample.y * M_PI;
+    sample = distribution->sample(sample, &ref.pdf_light);
+    float theta = sample.y * M_PI, phi = 2.0f * sample.x * M_PI;
+    float sint = sin(theta);
     *wi = Ray(wi->getOrigin(), make_float3(sin(theta) * sin(phi),cos(theta), sin(theta) * cos(phi)));
-    int idx = sample.x * height * width + sample.y * width;
-    idx *= 3;
+    if (ref.pdf_light < 0.001f)
+        return BLACK;
+    else
+        if (sint < 0.001f)
+            return BLACK;
+    
+    ref.pdf_light /= (2.0f * sint * M_PI * M_PI);
+
     float3 j;
     //May use MIPMAP
-
-    float4 tmp = tex2D<float4>(img, theta  * INV_PI, phi * INV_PI);
+    float4 tmp = tex2D<float4>(img, 0.5f * phi * INV_PI, theta * INV_PI);
     return make_float3(tmp.x, tmp.y, tmp.z);
 }
 
@@ -153,10 +160,15 @@ __device__ float EnvironmentLight::PDF(IntersectRecord rec, const float3 &wi)con
     float sint = sin(theta);
     float phi = atan2f(k.x, k.z);
 
-    if(sint < 0.0001f)
+    if(sint < 0.001f)
         return 0.0f;
 
-    return distribution->PDF(make_float2(phi, theta)) / (2.0f * M_PI * M_PI * sint);
+    if (wi.z < 0.0f)
+        phi += M_PI;
+    if (phi < 0.0f)
+        phi += 2.0f * M_PI;
+
+    return distribution->PDF(make_float2(phi * 0.5f * INV_PI, theta * INV_PI)) / (2.0f * M_PI * M_PI * sint);
 }
 
 __device__ float3 EnvironmentLight::getLe(Ray &r) const
@@ -174,11 +186,14 @@ __device__ float3 EnvironmentLight::L(const float3 &r, IntersectRecord *rec) con
     if (sint > 0.001f)
     {
         float phi = atan2f(r.x, r.z);
+        if (r.z  < 0.0f)
+            phi += M_PI;
         if (phi < 0.0f)
             phi += 2.0f * M_PI;
+       // printf("%f %f\n", phi, theta);
     }
 
-    float4 tmp = tex2D<float4>(img, theta  * INV_PI, phi * INV_PI);
+    float4 tmp = tex2D<float4>(img, phi * INV_PI * 0.5f, theta  * INV_PI);
     return make_float3(tmp.x, tmp.y, tmp.z);
 }
 
@@ -188,16 +203,16 @@ __host__ bool EnvironmentLight::setUp(float *img_f, int width, int height)
     Distribution2D *dis = new Distribution2D(img_f, width, height);
     dis->load2Device();
 
-    cudaMalloc(&distribution, sizeof(Distribution2D));
-    cudaMemcpy(distribution, dis, sizeof(Distribution2D), cudaMemcpyHostToDevice);
+    auto error = cudaMalloc(&distribution, sizeof(Distribution2D));
+    error = cudaMemcpy(distribution, dis, sizeof(Distribution2D), cudaMemcpyHostToDevice);
 
     delete dis;
 
     //Load Texture
     cudaChannelFormatDesc cl = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
-    cudaMallocArray(&array, &cl, width, height);
-    cudaMemcpyToArray(array, 0, 0, img_f, sizeof(float4) * width * height, cudaMemcpyHostToDevice);
-
+    error = cudaMallocArray(&array, &cl, width, height);
+    error = cudaMemcpyToArray(array, 0, 0, img_f, sizeof(float4) * width * height, cudaMemcpyHostToDevice);
+    
     // Specify texture
     struct cudaResourceDesc resDesc;
     memset(&resDesc, 0, sizeof(resDesc));
@@ -213,6 +228,6 @@ __host__ bool EnvironmentLight::setUp(float *img_f, int width, int height)
     texDesc.readMode = cudaReadModeElementType;
     texDesc.normalizedCoords = 1;
 
-    cudaCreateTextureObject(&img, &resDesc, &texDesc, NULL);
-    return true;
+    error = cudaCreateTextureObject(&img, &resDesc, &texDesc, NULL);
+    return error == cudaSuccess;
 }
