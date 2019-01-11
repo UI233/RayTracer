@@ -17,13 +17,11 @@ CUDA_FUNC float3 offsetFromPoint(float3 origin, float3 normal, float3 error_boun
 class IntersectRecord
 {
 public:
-    CUDA_FUNC IntersectRecord() : t(INF), isLight(false), lightidx(-1) {}
+    CUDA_FUNC IntersectRecord() : t(INF), isLight(false), lightidx(-1), color(make_float3(-1.0f, -1.0f, -1.0f)) {}
     CUDA_FUNC ~IntersectRecord() = default;
-    CUDA_FUNC IntersectRecord(const float3 &p, const float3 &n, const Ray &r, const float &dis = INF) : pos(p), normal(n), t(dis), wo(r) {};
 
     float3 pos, normal, tangent;
-    //World2Local
-    mat4 transformation;
+    float3 color;
     float t;
     Ray wo;
     int lightidx;
@@ -42,13 +40,13 @@ public:
 
     CUDA_FUNC float3 f(const float3 &wo, const float3 &wi) const
     {
-        return material->f(normal, tangent, wo, wi);
+        return material->f(normal, tangent, wo, wi, color);
     }
 
     //emited ray, incident ray, possibility for wi, the 2-D sample points between [0, 1]
     CUDA_FUNC  float3 sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const
     {
-        return material->sample_f(normal, tangent, wo, wi, pdf,sample);
+        return material->sample_f(normal, tangent, wo, wi, pdf,sample, color);
     }
 
     CUDA_FUNC float PDF( const float3 &wo, const float3 &wi) const

@@ -1,12 +1,12 @@
 #include "Object.cuh"
 #include <cstdio>
-CUDA_FUNC float3 Material::f(float3 normal, float3 tangent, const float3 &wo, const float3 &wi) const
+CUDA_FUNC float3 Material::f(float3 normal, float3 tangent, const float3 &wo, const float3 &wi, float3 color) const
 {
     float3 f = BLACK;
     if (m_type == material::LAMBERTIAN)
     {
         Lambertian tmp = *(Lambertian*)brdfs;
-        f = tmp.f(world2Local(normal, tangent, wo), world2Local(normal, tangent, wi));
+        f = tmp.f(world2Local(normal, tangent, wo), world2Local(normal, tangent, wi), color);
     }
     else if (m_type == material::FRESNEL)
     {
@@ -20,7 +20,8 @@ CUDA_FUNC float3 Material::f(float3 normal, float3 tangent, const float3 &wo, co
     return f;
 }
 
-CUDA_FUNC float3 Material::sample_f(float3 normal, float3 tangent, const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const
+CUDA_FUNC float3 Material::sample_f(float3 normal, float3 tangent, const float3 &wo, float3 *wi, float *pdf, const float2 &sample
+    ,float3 color) const
 {
     float3 rwo = world2Local(normal, tangent, wo);
     float3 res = BLACK;
@@ -28,7 +29,7 @@ CUDA_FUNC float3 Material::sample_f(float3 normal, float3 tangent, const float3 
     if (m_type == material::LAMBERTIAN)
     {
         tmp = *(Lambertian*)brdfs;
-        res = tmp.sample_f(rwo, wi, pdf, sample);
+        res = tmp.sample_f(rwo, wi, pdf, sample, color);
     }
     else if (m_type == material::FRESNEL)
     {

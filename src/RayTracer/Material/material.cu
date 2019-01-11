@@ -6,15 +6,17 @@
 #define MAXN 0xffffffffu
 
 
-CUDA_FUNC float3 Lambertian::f(const float3 &wo, const float3 &wi)const
+CUDA_FUNC float3 Lambertian::f(const float3 &wo, const float3 &wi, float3 c)const
 {
-    //if(wo.y >0.0f && wi.y > 0.0f)
-    //    printf("%f %f\n", wo.y, wi.y);
-    return  (wo.y > 0.0f && wi.y > 0.0f) ? color * INV_PI : make_float3(0.0f, 0.0f, 0.0f);
+    if (c.x < 0.0f)
+        c = color;
+    return  (wo.y > 0.0f && wi.y > 0.0f) ? c * INV_PI : make_float3(0.0f, 0.0f, 0.0f);
 }
 
-CUDA_FUNC float3 Lambertian::sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample) const
+CUDA_FUNC float3 Lambertian::sample_f(const float3 &wo, float3 *wi, float *pdf, const float2 &sample, float3 c) const
 {
+    if (c.x < 0.0f)
+        c = color;
     if (pdf == nullptr || wi == nullptr)
         return make_float3(0.0f);
 
@@ -24,7 +26,7 @@ CUDA_FUNC float3 Lambertian::sample_f(const float3 &wo, float3 *wi, float *pdf, 
     *wi = make_float3(sin(theta) * cosPhi, sinPhi, cos(theta) * cosPhi);
     *pdf = PDF(wo, *wi);
 
-    return f(wo, *wi);
+    return f(wo, *wi, c);
 }
 
 CUDA_FUNC bool Lambertian::isSpecular() const
