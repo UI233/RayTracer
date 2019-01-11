@@ -335,7 +335,7 @@ CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
             colideRec.t = t0;
             colideRec.pos = pos;
             colideRec.normal = normal;
-            colideRec.tangent = tangent;
+            colideRec.tangent = normalize(tangent);
 			colideRec.isLight = false;
             return true;
         }

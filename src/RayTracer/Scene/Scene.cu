@@ -194,18 +194,16 @@ __host__ bool Scene::initializeScene(int light_size[],
 }
 
 
-__device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec, float2 sample_light, float2 sample_BRDF, int idx, bool isDelta) const
+__device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, float2 sample_light, float2 sample_BRDF, int idx, bool isDelta) const
 {
     Ray r;
     float3 lpos;
-    float3 color, res;
+    float3 color, res = BLACK;
     bool blocked = false;
 
     color = light->lightIllumi(rec, &r, sample_light);
     lpos = r.getOrigin();
 
-    if (color.y < +0.0f)
-        printf("1\n");
     Material *this_material = rec.material;
     IntersectRecord light_rec;
 
@@ -259,10 +257,9 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec,
                 weight = PowerHeuristic(rec.pdf_surface, pdf);
             }
 
-            float3 l;
-            if (hit(r, rec))
+            float3 l = BLACK;
+            if (hit(r, rec) && rec.lightidx == idx)
             {
-                if (rec.lightidx == idx)
                     l = light -> L( -wi, &rec);
             }
             else
@@ -270,20 +267,6 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord &rec,
 
             res += l * f * weight / rec.pdf_surface;
 
-            //Magic code: it can keep the color from being negative
-            if (res.y < +0.0f)
-            {
-                printf("3\n");
-                if (l.y < +0.0f)
-                    printf("L:%f %f %f\n", l.x, l.y, l.z);
-                if(f.y < +0.0f)
-                    printf("F:%f %f %f\n", f.x, f.y, f.z);
-                if (weight < 0.0f)
-                    printf("w : %f\n", weight);
-                if (rec.pdf_surface < 0.0f)
-                    printf("sr:%f\n", rec.pdf_surface);
-            }
-            //Add light contribution from material sampling
         }
     }
 

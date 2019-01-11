@@ -60,25 +60,18 @@ __global__ void debug(cudaSurfaceObject_t surface, cudaSurfaceObject_t surfacew,
     //curand_init(1234, idx, 0, rstate);//Produce many noises after initialization
     IntersectRecord rec;
 
-    float3 px_color;
+    float3 px_color = BLACK;
     Ray r;
     float frac1 = 1.0f / *cnt;
     float frac2 = frac1 * (*cnt - 1);
+    float xoff = curand_uniform(state), yoff = curand_uniform(state);
     float4 cas;
     for(int x = stx; x < stx +  WIDTH_PER_THREADS; x++)
         for (int y = sty; y < sty + HEIGHT_PER_THREADS; y++)
         {
-            r = globalCam.generateRay(x - WIDTH / 2, y - HEIGHT / 2);
-            px_color = pathTracer(r, *scene,  state + idx);
-            //I don't know why this if-statement can let those strange white noises disappear...
-            if (px_color.x > 10.0f && px_color.y > 10.0f && px_color.z > 10.0f)
-            {
-                printf("%f %f %f\n", px_color.x, px_color.y, px_color.z);
-                printf("%d %d", x, y);
-            }
-
             surf2Dread(&cas, surface, x * sizeof(float4), y);
-            
+            r = globalCam.generateRay(x - WIDTH / 2 + xoff, y - HEIGHT / 2 + yoff);
+            px_color = pathTracer(r, *scene,  state + idx);
             px_color = frac2 * make_float3(cas.x, cas.y, cas.z) + frac1 * px_color;
            // surf2Dwrite(make_float4(px_color.x, px_color.y, px_color.z, 1.0f), surfacew, x * sizeof(float4), y);
             surf2Dwrite(make_float4(px_color.x, px_color.y, px_color.z, 1.0f), surface, x * sizeof(float4), y);
@@ -232,7 +225,7 @@ bool initCUDA(GLuint glTex)
     error = cudaCreateSurfaceObject(&surface_hdr, &dsc);
 
     //Initialize the camera
-    Camera cam(make_float3(0.0f, 0.0f, 2.0f), make_float3(0.0f, 0.3f, -1.0f), 2.0f, 0.10f, 1000.0f,
+    Camera cam(make_float3(0.0f, 0.0f, 0.0f), make_float3(0.0f, 0.0f, -1.0f), 2.0f, 0.10f, 1000.0f,
         make_int2(WIDTH / 2, HEIGHT / 2), make_float3(0.0f, 1.0f, 0.0f));
     //Malloc rand generator
     cudaMalloc(&state, sizeof(curandState) * thread_num * 2);
@@ -279,17 +272,17 @@ void test_for_initialize_scene()
     EnvironmentLight light(tmp, width, height);
     STBI_FREE(tmp);
     Scene scene;
-    int lz[light::TYPE_NUM] = { 0,0,0,1 }, ms[model::TYPE_NUM] = { 0,0,2 };
+    int lz[light::TYPE_NUM] = { 0,0,1,1 }, ms[model::TYPE_NUM] = { 0,0,2 };
     int mat_type[] = { material::LAMBERTIAN , material::LAMBERTIAN, material::LAMBERTIAN };
-    Lambertian lamb(make_float3(0.7f, 0.8f, 0.4f)), lamb2(make_float3(1.0f, 0.0f, 0.0f)), lamb3(make_float3(1.0f, 1.0f, 1.0f));
+    Lambertian lamb(make_float3(0.7f, 0.0f, 0.0f)), lamb2(make_float3(0.9f, 0.0f, 0.0f)), lamb3(make_float3(1.0f, 1.0f, 1.0f));
     Material m(&lamb, material::LAMBERTIAN), c(&lamb2, material::LAMBERTIAN), cs(&lamb3, material::LAMBERTIAN);
     Material t[] = { m,c ,cs };
 
-    TriangleLight trl(make_float3(0.0f, 10.3f, 2.0f),
-        make_float3(2.0f, 0.7f, 3.0f),
-        make_float3(0.0f, 0.0f, 3.0f), make_float3(8.0f, 8.0f, 8.0f), true);
+    TriangleLight trl(make_float3(0.0f, 10.3f, -2.0f),
+        make_float3(2.0f, 0.7f, -3.0f),
+        make_float3(0.0f, 0.0f, -3.0f), make_float3(31.0f, 31.0f, 31.0f), true);
 
-    Quadratic q(make_float3(0.3f, 0.0f, 0.0f), Sphere);
+    Quadratic q(make_float3(0.33f, 0.0f, 0.0f), Sphere);
     q.setUpTransformation(
         mat4(1.0f, 0.0f, 0.0f, 0.0f,
             0.0f, 1.0f, 0.0f, 0.0f,
@@ -297,11 +290,11 @@ void test_for_initialize_scene()
             0.0f, 0.0f, 0.0f, 1.0f)
     );
 
-    Quadratic s(make_float3(1.0f, 0.0f, 0.0f), Sphere);
+    Quadratic s(make_float3(0.01f, 0.0f, 0.0f), Sphere);
     s.setUpTransformation(
-        mat4(1.0f, 0.0f, 0.0f, -1.0f,
-            0.0f, 1.0f, 0.0f, 2.0f,
-            0.0f, 0.0f, 1.0f, -4.0f,
+        mat4(1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, -103.0f,
+            0.0f, 0.0f, 1.0f, -8.0f,
             0.0f, 0.0f, 0.0f, 1.0f)
     );
 

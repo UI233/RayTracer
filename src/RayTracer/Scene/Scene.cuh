@@ -15,7 +15,7 @@ public:
     //Load the scene to GPU
     __host__ bool initializeScene(int light_size[], int model_size[],  PointLight *pointl, DirectionalLight *dril
     , TriangleLight *tril, EnvironmentLight *envl, Triangle *tri, Mesh *mesh, Quadratic *qudratic, int material_type[], Material *mat);
-    __device__ float3 evaluateDirectLight(Light *light, IntersectRecord &ref, float2 sample_light = make_float2(0.0f, 0.0f), 
+    __device__ float3 evaluateDirectLight(Light *light, IntersectRecord ref, float2 sample_light = make_float2(0.0f, 0.0f), 
         float2 sample_BRDF = make_float2(0.0f, 0.0f), int idx = -2, bool isDelta = false) const;
 
     CUDA_FUNC Light* getIdxAreaLight(int idx)

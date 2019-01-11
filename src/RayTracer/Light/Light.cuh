@@ -89,6 +89,8 @@ public:
     };
     __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *mat);
 
+    __device__ float3 getLe(Ray &r) const { return BLACK; };
+
 private:
     float3 pos[3];
     float3 normal;
