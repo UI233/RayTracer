@@ -7,28 +7,30 @@
 //Brute force method
 CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
 {
-    for (int i = 0; i < model::TYPE_NUM; i++)
+    Quadratic q;
+    Triangle a;
+    Mesh t;
+    for (int i = 0; i < (int)model::TYPE_NUM; i++)
     {
         switch (model::MODEL_TYPE(i))
         {
         case model::TRIAGNLE:
-            for (int j = 0; j < model_sz[i]; j++)
+            for (size_t j = 0; j < model_sz[i]; j++)
             {
-                Triangle a = tri[j];
+                a = tri[j];
                 a.hit(r, rec);
             }
             break;
         case model::MESH:
-            for (int j = 0; j < model_sz[i]; j++)
+            for (size_t j = 0; j < model_sz[i]; j++)
             { 
-                Mesh t = mesh[j]; 
+                t = mesh[j]; 
                 t.hit(r, rec);
             }
             break;
         case model::Quadratic:
-            for (int j = 0; j < model_sz[i]; j++)
-            {
-                Quadratic q;
+            for (size_t j = 0; j < model_sz[i]; j++)
+            { 
                 q = quad[j];
                 q.hit(r, rec);
             }
@@ -38,14 +40,15 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
         }
     }
 
+    TriangleLight l;
     for (int i = light::TRIANGLE_LIGHT; i < light::TYPE_NUM; i++)
     {
         switch (light::LIGHT_TYPE(i))
         {
         case light::TRIANGLE_LIGHT:
-            for (int j = 0; j < light_sz[i]; j++)
+            for (size_t j = 0; j < light_sz[i]; j++)
             {
-                TriangleLight l = tril[j];
+                l = tril[j];
                 if (l.hit(r, rec))
                 {
                     rec.lightidx = j;
@@ -80,6 +83,7 @@ __device__ float3 Scene::sampleAllLight(IntersectRecord &rec,  curandState *stat
         {   
             float2 sample_light = make_float2(curand_uniform(state), curand_uniform(state));
             float2 sample_surface = make_float2(curand_uniform(state), curand_uniform(state));
+
             switch (light::LIGHT_TYPE(i))
             {
             case light::POINT_LIGHT:
@@ -216,11 +220,15 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, 
     if(!isBlack(f))
         if (hit(r, light_rec))
         {
-            blocked = light_rec.lightidx == idx ? false : (length(rec.pos - r.getOrigin()) < length(r.getOrigin() - lpos) - 0.01f);
+            blocked = light_rec.lightidx == idx ? false : (length(light_rec.pos - r.getOrigin()) < length(r.getOrigin() - lpos) - 0.01f);
         }
 
     light_rec.wo = r;
     res = BLACK;
+
+	if (rec.pdf_light < 0.001f )
+		return BLACK;
+
     if (!isBlack(f) && !blocked && !isBlack(color))
     {  
         if (isDelta)
@@ -230,7 +238,15 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, 
         else
         {
             rec.pdf_surface = rec.PDF(-rec.wo.getDir(), r.getDir());
-            color = color * f *  PowerHeuristic(rec.pdf_light, rec.pdf_surface) / rec.pdf_light;
+			float weight = (PowerHeuristic(rec.pdf_light, rec.pdf_surface));
+			weight /= rec.pdf_light;
+			if (rec.pdf_surface > 0.001f)
+				color = color * f *  weight;
+
+			if (isnan(color.x))
+			{
+				printf("??1\n %f %f %f\n",rec.pdf_light, rec.pdf_surface, weight);
+			}
         }
         res = color;
         //if (res.y < +0.0f)
@@ -247,7 +263,7 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, 
 
         rec.t = INF;
         rec.lightidx = -1;
-        if (!isBlack(f) && rec.pdf_surface > 0.0001f)
+        if (!isBlack(f) && rec.pdf_surface > 0.001f)
         {
             if (!this_material->isSpecular())
             {
@@ -266,7 +282,6 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, 
                 l = light->getLe(r);
 
             res += l * f * weight / rec.pdf_surface;
-
         }
     }
 

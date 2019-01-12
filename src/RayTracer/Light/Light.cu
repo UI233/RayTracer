@@ -59,6 +59,7 @@ __device__ float3 TriangleLight::lightIllumi(IntersectRecord &ref, Ray *wi, floa
     ref.t = length(ref.pos - pos);
     //bugs here
     ref.pdf_light = PDF(ref, wi ->getDir());
+
     ref.t = t;
     return L(wi->getDir());
 }

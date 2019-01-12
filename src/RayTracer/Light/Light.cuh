@@ -79,6 +79,8 @@ public:
     }
 
     __device__ float PDF(IntersectRecord rec, const float3 &wi)  const{
+		if (fabs(dot(normal, wi)) < 0.001f)
+			return 0.0f;
         return rec.t * rec.t / (area() * fabs(dot(normal , wi))); 
     };
     __device__ float3 L(const float3 &r, IntersectRecord *rec = nullptr) const

@@ -31,8 +31,8 @@ public:
     }
     int light_sz_all, model_sz_all;
 private:
-    int light_sz[light::TYPE_NUM];
-    int model_sz[model::TYPE_NUM];
+    size_t light_sz[light::TYPE_NUM];
+    size_t model_sz[model::TYPE_NUM];
     float3 light_power;
 
     DirectionalLight *dirl;
