@@ -23,6 +23,7 @@ public:
     float3 pos, normal, tangent;
     float3 color;
     float t;
+    float2 uv;
     Ray wo;
     int lightidx;
     int light_type;
