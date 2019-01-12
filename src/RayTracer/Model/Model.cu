@@ -65,12 +65,12 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 	
 
 	float t;
-    float3 normal = cross(ta - tc, tb - tc);
-    float dot_normal_dir = dot(normal, r.getDir());
+    float3 norma = cross(ta - tc, tb - tc);
+    float dot_normal_dir = dot(norma, r.getDir());
     if (fabs(dot_normal_dir) < FLOAT_EPISLON)
         return false;
 
-    t = (-dot(r.getOrigin(), normal) + dot(ta, normal))/ dot_normal_dir;
+    t = (-dot(r.getOrigin(), norma) + dot(ta, norma))/ dot_normal_dir;
 
     float3 pos = r.getPos(t);
 
@@ -92,7 +92,7 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
         colideRec.material = my_material;
         colideRec.material_type = material_type;
         colideRec.t = t;
-        colideRec.normal = normal;
+        colideRec.normal = m1 * normal[0] + m2 * normal[1] + m3 * normal[2];
         colideRec.pos = r.getPos(t);
 		colideRec.isLight = false;
         colideRec.tangent =  normalize((tb - ta) * m2 + (tc - ta) * m3);
