@@ -85,7 +85,7 @@ public:
     {
         if (two_side)
             return illum;
-        else return dot(r, rec->normal) > 0 ? illum : BLACK;
+        else return dot(r, normal) > 0 ? illum : BLACK;
     };
     __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *mat);
 

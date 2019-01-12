@@ -36,7 +36,7 @@ __device__ TriangleLight::TriangleLight(float3 posa, float3 posb, float3 posc, c
     pos[0] = posa;
     pos[1] = posb;
     pos[2] = posc;
-    normal = normalize(cross(pos[2] - pos[0], pos[1] - pos[0]));
+    normal = normalize(cross(pos[1] - pos[0], pos[2] - pos[0]));
 }
 
 __device__ float3 TriangleLight::interpolatePosition(float3 tri_sample) const
@@ -60,7 +60,7 @@ __device__ float3 TriangleLight::lightIllumi(IntersectRecord &ref, Ray *wi, floa
     //bugs here
     ref.pdf_light = PDF(ref, wi ->getDir());
     ref.t = t;
-    return illum;
+    return L(wi->getDir());
 }
 
 
