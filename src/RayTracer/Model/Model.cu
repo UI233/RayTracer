@@ -74,7 +74,7 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 
     float3 pos = r.getPos(t);
 
-    float S = area();
+    float S = 2.0f * area();
     float s1 = length(cross(pos - ta, pos -tb));
     float s2 = length(cross(pos - tc, pos - ta));
     float s3 = length(cross(pos - tc, pos - tb));
@@ -92,10 +92,10 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
         colideRec.material = my_material;
         colideRec.material_type = material_type;
         colideRec.t = t;
-        colideRec.normal = m1 * normal[0] + m2 * normal[1] + m3 * normal[2];
+        colideRec.normal = normalize(m1 * normal[0] + m2 * normal[1] + m3 * normal[2]);
         colideRec.pos = r.getPos(t);
 		colideRec.isLight = false;
-        colideRec.tangent =  normalize((tb - ta) * m2 + (tc - ta) * m3);
+        colideRec.tangent =  normalize( cross(colideRec.normal, make_float3(0.3, 0.4, -0.5)));
 		return true;
     }
 
@@ -373,7 +373,7 @@ CUDA_FUNC float Triangle::area() const
     for (int i = 0; i < 3; i++)
         rpos[i] = transformation(pos[i]);
 
-    return length(cross(rpos[2] - rpos[0], rpos[1] - rpos[0]));
+    return 0.5f * length(cross(rpos[2] - rpos[0], rpos[1] - rpos[0]));
 }
 
 __host__ bool Model::setUpMaterial(material::MATERIAL_TYPE t, Material *mat)

@@ -1,4 +1,5 @@
 #include "PathTracer.cuh"
+#include <cmath>
 #ifndef MAX_DEPTH
 #define MAX_DEPTH 12
 #endif // !MAX_DEPTH
@@ -25,6 +26,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
 
     for (int bounces = 0; ; bounces++)
     {
+        sample_scatter = make_float2(curand_uniform(state), curand_uniform(state));
         rec.t = INF;
         rec.lightidx = -1;
         rec.isLight = false;
@@ -81,10 +83,10 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
         }
         //use brdf to sample new direction
         le = rec.sample_f(-r.getDir(), &wi, &pdf, sample_scatter);
-
+        if (pdf < 0.0001f || length(le) < 0.0001f)
+            return res;
         beta *= le * fabs(dot(wi, rec.normal)) / pdf;
         r = rec.spawnRay(wi);
-
         //Russian roulette to determine whether to terminate the routine
         rrbeta = beta * etaScale;
         max_comp = maxComp(rrbeta);
