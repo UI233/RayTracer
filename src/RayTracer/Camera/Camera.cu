@@ -32,7 +32,7 @@ CUDA_FUNC float2 Camera::getxy(const float3 &poso)
         return make_float2(0.0f, 0.0f);
     float aspect = (float)resolution.x / resolution.y;
     float t = n / dot(dir, front);
-    float3 rpos = pos + t * dir;
+    float3 rpos =  t * dir;
 
     float2 res;
     res.x = dot(rpos, right) * resolution.x / step / aspect;
