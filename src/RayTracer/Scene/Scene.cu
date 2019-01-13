@@ -240,13 +240,7 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, 
             rec.pdf_surface = rec.PDF(-rec.wo.getDir(), r.getDir());
 			float weight = (PowerHeuristic(rec.pdf_light, rec.pdf_surface));
 			weight /= rec.pdf_light;
-			if (rec.pdf_surface > 0.001f)
-				color = color * f *  weight;
-
-			if (isnan(color.x))
-			{
-				printf("??1\n %f %f %f\n",rec.pdf_light, rec.pdf_surface, weight);
-			}
+			color = color * f *  weight;
         }
         res = color;
         //if (res.y < +0.0f)
@@ -276,7 +270,7 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, 
             float3 l = BLACK;
             if (hit(r, rec) && rec.lightidx == idx)
             {
-                    l = light -> L( -wi, &rec);
+                l = light -> L( -wi, &rec);
             }
             else
                 l = light->getLe(r);
