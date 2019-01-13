@@ -30,6 +30,7 @@
     <ClInclude Include="core\PathTracer.cuh" />
     <ClInclude Include="PostProcess\PostProcess.cuh" />
     <ClInclude Include="PiecewiseConstant\PiecewiseConstant.cuh" />
+    <ClInclude Include="Texture\Texture.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\glut\src\gl3w.c" />

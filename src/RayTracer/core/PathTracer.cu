@@ -8,7 +8,7 @@
 #endif // !maxComp(x)
 
 
-__device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
+__device__ float3 pathTracer(Ray r, Scene &scene, curandStatePhilox4_32_10_t *state, Camera *cam)
 {/*
     StratifiedSampler<TWO> sampler_light(8, state);
     StratifiedSampler<TWO> sampler_scatter(8, state);*/
@@ -23,13 +23,13 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
     float2 sample_light, sample_scatter;//Store the samples
     float q, max_comp;
     float etaScale = 1.0f;
-
+    float4 tmp;
     for (int bounces = 0; ; bounces++)
     {
-        sample_scatter = make_float2(curand_uniform(state), curand_uniform(state));
-        rec.t = INF;
-        rec.lightidx = -1;
-        rec.isLight = false;
+        tmp = curand_uniform4(state);
+        sample_scatter = make_float2(tmp.x, tmp.y);
+        rec = IntersectRecord();
+        rec.global_cam = cam;
         ishit = scene.hit(r, rec);
         rec.wo = r; 
         if(!bounces  || specular_bounce)
@@ -93,7 +93,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
         if (bounces > 3 && max_comp < 1.0f )
         {
             q = (1.0f - max_comp) > 0.5 ? (1.0f - max_comp) : 0.5;
-            if (curand_uniform(state) < q)
+            if (tmp.z < q)
                 break;
             beta /= 1.0f - q;
         }

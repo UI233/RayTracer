@@ -17,10 +17,10 @@ class StratifiedSampler
 {
 public:
     CUDA_FUNC StratifiedSampler() = delete;
-    CUDA_FUNC  StratifiedSampler(int sz, curandState *state) = 0;
+    CUDA_FUNC  StratifiedSampler(int sz, curandStatePhilox4_32_10_t *state) = 0;
     CUDA_FUNC ~StratifiedSampler() = delete;
 
-    __device__ float operator()(int i, curandState *state) const = 0;
+    __device__ float operator()(int i, curandStatePhilox4_32_10_t *state) const = 0;
 
     float *data;
 private:
@@ -33,7 +33,7 @@ class StratifiedSampler<ONE>
 {
 public:
     CUDA_FUNC StratifiedSampler() :size(0), data(NULL) {}
-    __device__ StratifiedSampler(unsigned int sz, curandState *state) : size(sz)
+    __device__ StratifiedSampler(unsigned int sz, curandStatePhilox4_32_10_t *state) : size(sz)
     {
         data = (float*)malloc(sz * sizeof(float));
 
@@ -57,7 +57,7 @@ public:
 
     CUDA_FUNC ~StratifiedSampler() = default;
 
-    __device__ float operator()(int i, curandState *state = NULL) const
+    __device__ float operator()(int i, curandStatePhilox4_32_10_t *state = NULL) const
     {
         if (i >= 0 && i < size)
             return data[i];
@@ -69,7 +69,7 @@ public:
         }
     }
 
-    __device__  void regenerate(curandState *state)
+    __device__  void regenerate(curandStatePhilox4_32_10_t *state)
     {
         float step = 1.0f / size;
         //Create Strarified samples
@@ -99,7 +99,7 @@ class StratifiedSampler<TWO>
 public:
     CUDA_FUNC StratifiedSampler():size(0), data(NULL) {}
 
-    __device__ StratifiedSampler(unsigned int sz, curandState *state) : size(sz)
+    __device__ StratifiedSampler(unsigned int sz, curandStatePhilox4_32_10_t *state) : size(sz)
     {
         data = (float *)malloc(sizeof(float) * 2 * sz);
 
@@ -133,7 +133,7 @@ public:
 
     CUDA_FUNC ~StratifiedSampler() = default;
 
-    __device__ float2 operator()(int i, curandState *state = NULL) const
+    __device__ float2 operator()(int i, curandStatePhilox4_32_10_t *state = NULL) const
     {
         if (i >= 0 && i < size)
             return make_float2(data[i * 2], data[i * 2 + 1]);
@@ -145,7 +145,7 @@ public:
         }
     }
 
-    __device__ void regenerate(curandState *state)
+    __device__ void regenerate(curandStatePhilox4_32_10_t *state)
     {
         float invSamples = 1.0f / size;
         int idx = -1;
@@ -185,7 +185,7 @@ class StratifiedSampler<TWO_FOR_SHARED>
 public:
     CUDA_FUNC StratifiedSampler() :size(0) {}
 
-    __device__ StratifiedSampler( curandState *state) : size(32)
+    __device__ StratifiedSampler( curandStatePhilox4_32_10_t *state) : size(32)
     {
         float invSamples = 1.0f / 32.0f;
         int idx = -1;
@@ -217,7 +217,7 @@ public:
 
     CUDA_FUNC ~StratifiedSampler() = default;
 
-    __device__ float2 operator()(int i, curandState *state = NULL) const
+    __device__ float2 operator()(int i, curandStatePhilox4_32_10_t *state = NULL) const
     {
         if (i >= 0 && i < size)
             return make_float2(data[i * 2], data[i * 2 + 1]);

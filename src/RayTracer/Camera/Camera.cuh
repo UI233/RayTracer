@@ -11,6 +11,7 @@ public:
     CUDA_FUNC Camera(const float3 &pos, const float3 &lookat, const float &fov, const float &near, const float &far, const int2 &resolution, const float3 &u);
     CUDA_FUNC ~Camera() = default;
     CUDA_FUNC Ray generateRay(float x, float y);
+    CUDA_FUNC float2 getxy(const float3 &pos);
     //CUDA_FUNC Ray generateDifferentialRay();
 
 private:

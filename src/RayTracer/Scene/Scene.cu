@@ -66,7 +66,7 @@ CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
     return rec.t > 0.001f && rec.t < INF - 0.1f;
 }
 
-__device__ float3 Scene::sampleAllLight(IntersectRecord &rec,  curandState *state) const
+__device__ float3 Scene::sampleAllLight(IntersectRecord &rec,  curandStatePhilox4_32_10_t *state) const
 {
     static int cntl = 0, cnts = 0;
     float3 res = BLACK;
@@ -76,13 +76,17 @@ __device__ float3 Scene::sampleAllLight(IntersectRecord &rec,  curandState *stat
     TriangleLight trl;
     EnvironmentLight e_l;
     int idx;
-    bool isDelta;
+    bool isDelta; 
+    float2 sample_light;
+    float2 sample_surface;
+    float4 tmp;
     for (unsigned int i = 0; i < (unsigned int)light::TYPE_NUM; i++)
     {
         for(int j = 0; j < light_sz[i];j++)
         {   
-            float2 sample_light = make_float2(curand_uniform(state), curand_uniform(state));
-            float2 sample_surface = make_float2(curand_uniform(state), curand_uniform(state));
+            tmp = curand_uniform4(state);
+            sample_light = make_float2(tmp.x, tmp.y);
+            sample_surface = make_float2(tmp.z, tmp.w);
 
             switch (light::LIGHT_TYPE(i))
             {
@@ -215,8 +219,8 @@ __device__ float3 Scene::evaluateDirectLight(Light *light, IntersectRecord rec, 
     
 
     //Ray wo;
-    float3 f = fabs(dot(rec.normal, r.getDir())) * rec.f(-rec.wo.getDir(), r.getDir());
-
+    float3 f = fabsf(dot(rec.normal, r.getDir())) * rec.f(-rec.wo.getDir(), r.getDir());
+    light_rec.global_cam = rec.global_cam;
     if(!isBlack(f))
         if (hit(r, light_rec))
         {

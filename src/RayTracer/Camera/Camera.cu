@@ -23,4 +23,21 @@ CUDA_FUNC Ray Camera::generateRay(float x, float y)
     return Ray(pos, normalize(dir));
 }
 
+CUDA_FUNC float2 Camera::getxy(const float3 &poso)
+{
+    static const float step = 0.25f;
+    float3 dir = normalize(poso - pos);
+    
+    if (dot(dir, front) == 0.0f)
+        return make_float2(0.0f, 0.0f);
+    float aspect = (float)resolution.x / resolution.y;
+    float t = n / dot(dir, front);
+    float3 rpos = pos + t * dir;
+
+    float2 res;
+    res.x = dot(rpos, right) * resolution.x / step / aspect;
+    res.y = dot(rpos, up) * resolution.y / step;
+
+    return res;
+}
 //CUDA_FUNC Ray generateDifferentialRay();

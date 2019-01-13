@@ -110,6 +110,7 @@
     <ClInclude Include="Material\Object.cuh" />
     <ClInclude Include="Matrix\Matrix.cuh" />
     <ClInclude Include="Model\Model.cuh" />
+    <ClInclude Include="Texture\Texture.cuh" />
     <CudaCompile Include="Ray\Ray.cuh" />
     <ClInclude Include="PiecewiseConstant\PiecewiseConstant.cuh" />
     <ClInclude Include="PostProcess\PostProcess.cuh" />
