@@ -74,7 +74,7 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 
     float3 pos = r.getPos(t);
 
-    float S = 0.5f * area();
+    float S = 2.0f * area();
     float s1 = length(cross(pos - ta, pos -tb));
     float s2 = length(cross(pos - tc, pos - ta));
     float s3 = length(cross(pos - tc, pos - tb));
