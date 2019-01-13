@@ -21,7 +21,7 @@ CUDA_FUNC float3 sampleHemi(const float2 &sample)
     else
     {
         r = rs.y;
-        theta = PiOver2 - PiOver4 * (rs.y / rs.x);
+        theta = PiOver2 - PiOver4 * (rs.x / rs.y);
     }
 
     d = r * make_float2(sinf(theta), cosf(theta));

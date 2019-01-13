@@ -26,6 +26,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
 
     for (int bounces = 0; ; bounces++)
     {
+        sample_scatter = make_float2(curand_uniform(state), curand_uniform(state));
         rec.t = INF;
         rec.lightidx = -1;
         rec.isLight = false;
@@ -86,7 +87,6 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
             return res;
         beta *= le * fabs(dot(wi, rec.normal)) / pdf;
         r = rec.spawnRay(wi);
-
         //Russian roulette to determine whether to terminate the routine
         rrbeta = beta * etaScale;
         max_comp = maxComp(rrbeta);
