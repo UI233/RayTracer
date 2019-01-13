@@ -65,7 +65,7 @@ __device__ float3 TriangleLight::lightIllumi(IntersectRecord &ref, Ray *wi, floa
 }
 
 
-CUDA_FUNC bool TriangleLight::hit(Ray &r, IntersectRecord &rec)
+__device__ bool TriangleLight::hit(Ray &r, IntersectRecord &rec)
 {
 
     float t;

@@ -5,7 +5,7 @@
 #endif // !isBlack(x)
 
 //Brute force method
-CUDA_FUNC bool Scene::hit(Ray &r, IntersectRecord &rec) const
+__device__ bool Scene::hit(Ray &r, IntersectRecord &rec) const
 {
     Quadratic q;
     Triangle a;

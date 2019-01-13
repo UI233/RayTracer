@@ -100,6 +100,7 @@
     <CudaCompile Include="Ray\IntersectionRecord.cu" />
     <CudaCompile Include="Ray\Ray.cu" />
     <CudaCompile Include="Scene\Scene.cu" />
+    <CudaCompile Include="Texture\Texture.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera\Camera.cuh" />
@@ -111,7 +112,7 @@
     <ClInclude Include="Matrix\Matrix.cuh" />
     <ClInclude Include="Model\Model.cuh" />
     <ClInclude Include="Texture\Texture.cuh" />
-    <CudaCompile Include="Ray\Ray.cuh" />
+    <ClInclude Include="Ray\Ray.cuh" />
     <ClInclude Include="PiecewiseConstant\PiecewiseConstant.cuh" />
     <ClInclude Include="PostProcess\PostProcess.cuh" />
     <ClInclude Include="Ray\IntersectionRecord.cuh" />

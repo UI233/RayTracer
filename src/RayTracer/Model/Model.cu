@@ -57,8 +57,38 @@ CUDA_FUNC float3 Triangle::interpolatePosition(float3 sample) const
     return transformation(sample.x * pos[0] + sample.y * pos[1] + sample.z * pos[2]);
 }
 
+CUDA_FUNC void Triangle::anyPoint(float3 Pos, float2* UV, float3* anyPos, float2* anyUV) {
+	float3 ta = transformation(pos[0]), tb = transformation(pos[1]), tc = transformation(pos[2]);
+	float S = 2.0f * area();
+	float s1 = length(cross(Pos - ta, Pos - tb));
+	float s2 = length(cross(Pos - tc, Pos - ta));
+	float s3 = length(cross(Pos - tc, Pos - tb));
 
-CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
+	float m1 = s3 / S, m2 = s2 / S, m3 = 1.0f - m1 - m2;
+	(*UV) = vText[0] * m1 + vText[1] * m2 + vText[2] * m3;
+	if (m3 > m2) {
+		if (m3 > m1) {
+			m1 += 0.01; m2 += 0.01; m3 -= 0.02;
+		}
+		else {
+			m2 += 0.01; m3 += 0.01; m1 -= 0.02;
+		}
+	}
+	else {
+		if (m1 > m2) {
+			m2 += 0.01; m3 += 0.01; m1 -= 0.02;
+		}
+		else {
+			m1 += 0.01; m3 += 0.01; m2 -= 0.02;
+		}
+	}
+
+	(*anyUV) = vText[0] * m1 + vText[1] * m2 + vText[2] * m3;
+	(*anyPos) = (Pos - ta)*m1 + (Pos - tb)*m2;
+}
+
+
+__device__  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 
     //colideRec.t = -1.0f;
 	float3 ta=transformation(pos[0]), tb=transformation(pos[1]), tc= transformation(pos[2]);
@@ -86,16 +116,19 @@ CUDA_FUNC  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
 
     float m1 = s3 / S, m2 = s2 / S, m3 = 1.0f - m1 - m2;
 	pvText = vText[0] * m1 + vText[1] * m2 + vText[2] * m3;
-	//Todo: load this to colideRec
+	//Todo: load this to colideRec   
+
     if (t > FLOAT_EPISLON && t < colideRec.t)
     {
         colideRec.material = my_material;
         colideRec.material_type = material_type;
         colideRec.t = t;
         colideRec.normal = normalize(m1 * normal[0] + m2 * normal[1] + m3 * normal[2]);
+		colideRec.normal = (transpose(inverse(transformation)))(colideRec.normal);
         colideRec.pos = r.getPos(t);
 		colideRec.isLight = false;
         colideRec.tangent =  normalize( cross(colideRec.normal, make_float3(0.3, 0.4, -0.5)));
+		colideRec.uv = pvText;
 		return true;
     }
 
@@ -118,8 +151,6 @@ __host__  bool Mesh::readFile(char * path) {
 			istringstream s(line.substr(2));
 			float2 v;
 			s >> v.x; s >> v.y;
-
-			v.y = -v.y;
 			vText.push_back(v);
 		}
 		else if (line.substr(0, 2) == "vn") {
@@ -147,7 +178,6 @@ __host__  bool Mesh::readFile(char * path) {
 				istringstream ivtn(vtn);
 				if (vtn.find("  ") != string::npos) {
 					ivtn >> vertex.x >> vertex.y;
-
 					vertex.x--;
 					vertex.y--;
 					vertex.z = 0xfff;
@@ -188,19 +218,24 @@ __host__  bool Mesh::readFile(char * path) {
 			float3 V[3], N[3];
 			float2 T[3];
 			for (int v = 0; v < n; v++) {
-				int it = vFace[f][v].z;
-				if (vText.size() > 0) {
+				int in = vFace[f][v].z;
+				if (in != 0xfff) {
+					V[v].x = vNorm[in].x;
+					V[v].y = vNorm[in].y;
+					V[v].z = vNorm[in].z;
+					int it = vFace[f][v].y;
 					T[v].x = vText[it].x;
 					T[v].y = vText[it].y;
 				}
-				//	glTexCoord2f(vText[it].x, vText[it].y);
-
-				int in = vFace[f][v].y;
-				if (vNorm.size() > 0) {
+				else {
+					T[v] = make_float2(0.0, 0.0);
+					in = (vFace[f])[v].y;
 					V[v].x = vNorm[in].x;
 					V[v].y = vNorm[in].y;
 					V[v].z = vNorm[in].z;
 				}
+				//	glTexCoord2f(vText[it].x, vText[it].y);
+
 				int iv = vFace[f][v].x;
 				N[v].x = vVertex[iv].x;
 				N[v].y = vVertex[iv].y;
@@ -208,8 +243,10 @@ __host__  bool Mesh::readFile(char * path) {
 				//	glVertex3f(vVertex[iv].x, vVertex[iv].y, vVertex[iv].z);
 			}
 
-			Triangle t(T,V,N);
-
+			Triangle t(T,N,V);
+			printf("0! %f %f |%f %f %f |%f %f %f\n", T[0].x, T[0].y, V[0].x, V[0].y, V[0].z, N[0].x, N[0].y, N[0].z);
+			printf("1! %f %f |%f %f %f |%f %f %f\n", T[1].x, T[1].y, V[1].x, V[1].y, V[1].z, N[1].x, N[1].y, N[1].z);
+			printf("2! %f %f |%f %f %f |%f %f %f\n", T[2].x, T[2].y, V[2].x, V[2].y, V[2].z, N[2].x, N[2].y, N[2].z);
 			t.setUpTransformation(transformation);
 			temp[f] = t;
 			//	glEnd();
@@ -249,21 +286,40 @@ __host__  bool Mesh::readFile(char * path) {
 }
 
 
-CUDA_FUNC  bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
+__device__ bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
     bool ishit = false;
     Triangle t;
+	int idx;
 //	printf("%d cao\n", number);
     for (int i = 0; i < number; i++) {
         t = *(meshTable + i);
-        ishit |= t.hit(r, colideRec);
+		if (t.hit(r, colideRec)) 			
+		{
+			ishit = true;
+			idx = i;
+		}
 	}
 	
+
 	if (ishit) {
 		colideRec.material = my_material;
 		colideRec.material_type = material_type;
+		float2 anyUV, UV;
+		float3 anyPos;
+		t = (*(meshTable + idx));
+		t.anyPoint(colideRec.pos, &UV, &anyPos, &anyUV);
+		float4 dxdy = colideRec.getdxdy(colideRec.pos, UV, anyPos, anyUV);
+		colideRec.color = make_float3(tex2DGrad<float4>(Texture, colideRec.uv.x, colideRec.uv.y, make_float2(dxdy.x,dxdy.y), make_float2(dxdy.z,dxdy.w)));
+		printf("%f %f %f \n", colideRec.color.x, colideRec.color.y, colideRec.color.y);
 	}
 
 	return ishit;
+}
+
+CUDA_FUNC void Mesh::initTexture(float *data ,int width, int height) {
+	Image temp;
+	initImages(&temp, data,width,height);
+	Texture = temp.textureObject;
 }
 
 CUDA_FUNC Quadratic::Quadratic(float3 Coefficient, int Type) {
@@ -294,7 +350,7 @@ CUDA_FUNC float Quadratic::getRadius() const{
 }
 
 
-CUDA_FUNC  bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
+__device__ bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
 	if (type == Sphere) {
         float3 center = make_float3(0.0f, 0.0f, 0.0f);
         mat4 inv = inverse(transformation);

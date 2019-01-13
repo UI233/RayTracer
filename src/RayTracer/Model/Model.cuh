@@ -11,6 +11,7 @@
 #include "device_launch_parameters.h"
 #include "curand.h"
 #include "curand_kernel.h"
+#include "../Texture/Texture.cuh"
 #include <cstdio>
 #include "vector"
 #include <fstream>
@@ -42,7 +43,7 @@ class Model {
 public:
      virtual ~Model() = default;
      Model() = default;
-	 CUDA_FUNC virtual bool hit(Ray r, IntersectRecord &colideRec) = 0;
+	 __device__ virtual bool hit(Ray r, IntersectRecord &colideRec) = 0;
      CUDA_FUNC virtual float area() const = 0;
      __host__ bool setUpMaterial(material::MATERIAL_TYPE type, Material *);
 	 __host__ bool setUpTransformation(mat4 Transformation) {
@@ -66,7 +67,8 @@ public:
 	 CUDA_FUNC Triangle(float2 t[3], float3 p[3], float3 norm[3]);
 	 CUDA_FUNC Triangle(float3 p[3], float3 norm[3]);
 	 CUDA_FUNC Triangle(const float3 p[3], const float3 norm[3]);
-	 CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
+	 __device__ bool hit(Ray r, IntersectRecord &colideRec);
+	 CUDA_FUNC void anyPoint(float3 pos, float2 *UV, float3* anyPos, float2* anyUV);
      CUDA_FUNC float area() const override;
      CUDA_FUNC float3 interpolatePosition(float3 sample) const;
 private:
@@ -83,7 +85,8 @@ public:
      ~Mesh() = default;
     __host__ bool readFile(char* path);
 
-	CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
+	__device__ bool hit(Ray r, IntersectRecord &colideRec);
+	CUDA_FUNC void initTexture(float *data, int width, int height);
 	CUDA_FUNC int size() {
         return number;
     }
@@ -105,7 +108,7 @@ public:
 	~Quadratic() = default;
 	CUDA_FUNC Quadratic(float3 Coefficient,int Type);
 	CUDA_FUNC bool setHeight(float Height);
-	CUDA_FUNC bool hit(Ray r, IntersectRecord &colideRec);
+	__device__ bool hit(Ray r, IntersectRecord &colideRec);
     CUDA_FUNC float area() const override {
         return 0.0f;
     }

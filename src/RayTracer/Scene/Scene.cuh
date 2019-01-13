@@ -10,7 +10,7 @@ class Scene
 public:
     CUDA_FUNC  Scene() = default;
     CUDA_FUNC ~Scene() = default;
-    CUDA_FUNC bool hit(Ray &r, IntersectRecord &rec) const;
+	__device__ bool hit(Ray &r, IntersectRecord &rec) const;
     __device__ float3 sampleAllLight(IntersectRecord &rec, curandStatePhilox4_32_10_t *state) const;
     //Load the scene to GPU
     __host__ bool initializeScene(int light_size[], int model_size[],  PointLight *pointl, DirectionalLight *dril

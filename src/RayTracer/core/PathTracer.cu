@@ -20,7 +20,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, curandStatePhilox4_32_10_t *st
     float3 le = BLACK,wi;   
     float3 beta = make_float3(1.0f, 1.0f, 1.0f), rrbeta = BLACK;
     float3 res = BLACK;
-    float2 sample_light, sample_scatter;//Store the samples
+    float2 sample_scatter;//Store the samples
     float q, max_comp;
     float etaScale = 1.0f;
     float4 tmp;
@@ -66,7 +66,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, curandStatePhilox4_32_10_t *st
 
         if (!ishit || bounces > MAX_DEPTH)
             break;
-
+		//return make_float3(1.0f, 1.0f, 1.0f);
         specular_bounce = rec.material_type & material::SPECULAR;
         //Sample one light to light the intersection point
         //won't sample for perferctly specular surface cause only the wi direction would be accounted 
