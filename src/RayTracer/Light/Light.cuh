@@ -75,7 +75,7 @@ public:
     __device__ float3 interpolatePosition(float3 tri_sample) const;
     CUDA_FUNC float area() const
     {
-        return length(cross(pos[2] - pos[0], pos[1] - pos[0]));
+        return 0.5 * length(cross(pos[2] - pos[0], pos[1] - pos[0]));
     }
 
     __device__ float PDF(IntersectRecord rec, const float3 &wi)  const{

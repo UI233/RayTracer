@@ -82,7 +82,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene,curandState *state)
         }
         //use brdf to sample new direction
         le = rec.sample_f(-r.getDir(), &wi, &pdf, sample_scatter);
-        if (pdf < 0.001f || length(le) < 0.001f)
+        if (pdf < 0.0001f || length(le) < 0.0001f)
             return res;
         beta *= le * fabs(dot(wi, rec.normal)) / pdf;
         r = rec.spawnRay(wi);

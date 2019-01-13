@@ -78,7 +78,7 @@ CUDA_FUNC bool TriangleLight::hit(Ray &r, IntersectRecord &rec)
 
     float3 rpos = r.getPos(t);
 
-    float S = area();
+    float S = 2.0f * area();
     float s1 = length(cross(rpos - pos[0], rpos - pos[1]));
     float s2 = length(cross(rpos - pos[2], rpos - pos[0]));
     float s3 = length(cross(rpos - pos[2], rpos - pos[1]));
