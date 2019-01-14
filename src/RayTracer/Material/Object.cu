@@ -10,13 +10,24 @@ CUDA_FUNC float3 Material::f(float3 normal, float3 tangent, const float3 &wo, co
     }
     else if (m_type == material::FRESNEL)
     {
-
+        return BLACK;
     }
     else if (m_type == material::GGX)
     {
+        GGX tmp = *(GGX *)brdfs;
+        f = tmp.f(world2Local(normal, tangent, wo), world2Local(normal, tangent, wi), color);
+    }
+    else if (m_type == material::Cook)
+    {
+        Cook_Torrance tmp = *(Cook_Torrance *)brdfs;
+        f = tmp.f(world2Local(normal, tangent, wo), world2Local(normal, tangent, wi), color);
 
     }
-
+    else if (m_type == material::Oren_Nayar)
+    {
+        Oren_Nayar tmp = *(Oren_Nayar *)brdfs;
+        f = tmp.f(world2Local(normal, tangent, wo), world2Local(normal, tangent, wi), color);
+    }
     return f;
 }
 
@@ -25,19 +36,35 @@ CUDA_FUNC float3 Material::sample_f(float3 normal, float3 tangent, const float3 
 {
     float3 rwo = world2Local(normal, tangent, wo);
     float3 res = BLACK;
-    Lambertian tmp;
     if (m_type == material::LAMBERTIAN)
     {
+        Lambertian tmp;
         tmp = *(Lambertian*)brdfs;
         res = tmp.sample_f(rwo, wi, pdf, sample, color);
     }
     else if (m_type == material::FRESNEL)
     {
-
+        Fresnel tmp;
+        tmp = *(Fresnel*)brdfs;
+        res = tmp.sample_f(rwo, wi, pdf, sample, color);
     }
     else if (m_type == material::GGX)
     {
-
+        GGX tmp;
+        tmp = *(GGX*)brdfs;
+        res = tmp.sample_f(rwo, wi, pdf, sample, color);
+    }
+    else if (m_type == material::Cook)
+    {
+        Cook_Torrance tmp;
+        tmp = *(Cook_Torrance*)brdfs;
+        res = tmp.sample_f(rwo, wi, pdf, sample, color);
+    }
+    else if (m_type == material::Oren_Nayar)
+    {
+        Oren_Nayar tmp;
+        tmp = *(Oren_Nayar*)brdfs;
+        res = tmp.sample_f(rwo, wi, pdf, sample, color);
     }
 
     *wi = local2World(normal, tangent, *wi);
@@ -59,7 +86,18 @@ CUDA_FUNC float Material::PDF(float3 normal, float3 tangent, const float3 &wo, c
     }
     else if(m_type == material::GGX)
     {
-
+        GGX tmp = *(GGX*)brdfs;
+        return tmp.PDF(rwo, rwi);
+    }
+    else if (m_type == material::Cook)
+    {
+        Cook_Torrance tmp = *(Cook_Torrance*)brdfs;
+        return tmp.PDF(rwo, rwi);
+    }
+    else if (m_type == material::Oren_Nayar)
+    {
+        Oren_Nayar tmp = *(Oren_Nayar*)brdfs;
+        return tmp.PDF(rwo, rwi);
     }
 
     return 0.0f;

@@ -14,9 +14,10 @@ namespace material
     {
         LAMBERTIAN = 1,
         FRESNEL = 7, // 111
-        Cock = 9,//1001
-        GGX,
-        MATERIAL_NUM = 3
+        Cook = 9,//1001
+        Oren_Nayar = 25,//11001
+        GGX = 17, //10001
+        MATERIAL_NUM = 5
     };
 }
 
