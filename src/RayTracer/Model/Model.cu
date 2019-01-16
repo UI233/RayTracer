@@ -93,7 +93,6 @@ __device__  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
     //colideRec.t = -1.0f;
 	float3 ta=transformation(pos[0]), tb=transformation(pos[1]), tc= transformation(pos[2]);
 	
-
 	float t;
     float3 norma = cross(ta - tc, tb - tc);
     float dot_normal_dir = dot(norma, r.getDir());
@@ -124,7 +123,9 @@ __device__  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
         colideRec.material_type = material_type;
         colideRec.t = t;
         colideRec.normal = normalize(m1 * normal[0] + m2 * normal[1] + m3 * normal[2]);
-		colideRec.normal = (transpose(inverse(transformation)))(colideRec.normal);
+        mat4 cas = transpose(inverse(transformation));
+		float4 tmp = normalize(cas(make_float4(colideRec.normal,0.0f)));
+        colideRec.normal = make_float3(tmp.x, tmp.y, tmp.z);
         colideRec.pos = r.getPos(t);
 		colideRec.isLight = false;
         colideRec.tangent =  normalize( cross(colideRec.normal, make_float3(0.3, 0.4, -0.5)));
@@ -135,7 +136,7 @@ __device__  bool  Triangle::hit(Ray r, IntersectRecord &colideRec) {
     return false;
 }
 
-__host__  bool Mesh::readFile(char * path) {
+__host__  bool Mesh::readFile(const char * path) {
 	ifstream file(path);
 
 	vector<float3> vVertex;
@@ -244,9 +245,6 @@ __host__  bool Mesh::readFile(char * path) {
 			}
 
 			Triangle t(T,N,V);
-			printf("0! %f %f |%f %f %f |%f %f %f\n", T[0].x, T[0].y, V[0].x, V[0].y, V[0].z, N[0].x, N[0].y, N[0].z);
-			printf("1! %f %f |%f %f %f |%f %f %f\n", T[1].x, T[1].y, V[1].x, V[1].y, V[1].z, N[1].x, N[1].y, N[1].z);
-			printf("2! %f %f |%f %f %f |%f %f %f\n", T[2].x, T[2].y, V[2].x, V[2].y, V[2].z, N[2].x, N[2].y, N[2].z);
 			t.setUpTransformation(transformation);
 			temp[f] = t;
 			//	glEnd();
@@ -290,7 +288,6 @@ __device__ bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
     bool ishit = false;
     Triangle t;
 	int idx;
-//	printf("%d cao\n", number);
     for (int i = 0; i < number; i++) {
         t = *(meshTable + i);
 		if (t.hit(r, colideRec)) 			
@@ -310,7 +307,6 @@ __device__ bool  Mesh::hit(Ray r, IntersectRecord &colideRec) {
 		t.anyPoint(colideRec.pos, &UV, &anyPos, &anyUV);
 		float4 dxdy = colideRec.getdxdy(colideRec.pos, UV, anyPos, anyUV);
 		colideRec.color = make_float3(tex2DGrad<float4>(Texture, colideRec.uv.x, colideRec.uv.y, make_float2(dxdy.x,dxdy.y), make_float2(dxdy.z,dxdy.w)));
-		printf("%f %f %f \n", colideRec.color.x, colideRec.color.y, colideRec.color.y);
 	}
 
 	return ishit;
@@ -397,10 +393,6 @@ __device__ bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
         tangent = normalize(tangent);
         pos = transformation(pos);
 
-        //if(t0 > 0.0f)
-         //   if (dot(normal, r.getDir()) < 0.0f)
-         //      printf("%f\n", dot(normal, r.getDir()));
-
         if (t0 > FLOAT_EPISLON && t0 < colideRec.t)
         {
             //printf("hhh");
@@ -413,12 +405,7 @@ __device__ bool  Quadratic::hit(Ray r, IntersectRecord &colideRec) {
 			colideRec.isLight = false;
             return true;
         }
-	} 
-	else {
-		//TODO-Cylinder.
-		                               
 	}
-
 	return false;
 }
 
@@ -439,6 +426,18 @@ __host__ bool Model::setUpMaterial(material::MATERIAL_TYPE t, Material *mat)
     {
     case material::LAMBERTIAN:
         num = sizeof(Lambertian);
+        break;
+    case material::FRESNEL:
+        num = sizeof(Fresnel);
+        break;
+    case material::GGX:
+        num = sizeof(GGX);
+        break;
+    case material::Cook:
+        num = sizeof(Cook_Torrance);
+        break;
+    case material::Oren_Nayar:
+        num = sizeof(Oren_Nayar);
         break;
     case material::MATERIAL_NUM:
         //break;

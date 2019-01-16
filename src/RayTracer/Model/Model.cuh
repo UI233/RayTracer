@@ -83,7 +83,7 @@ class Mesh : public Model {
 public:
      Mesh() = default;
      ~Mesh() = default;
-    __host__ bool readFile(char* path);
+    __host__ bool readFile(const char* path);
 
 	__device__ bool hit(Ray r, IntersectRecord &colideRec);
 	CUDA_FUNC void initTexture(float *data, int width, int height);

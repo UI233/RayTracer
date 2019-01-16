@@ -227,9 +227,6 @@ CUDA_FUNC mat4 inverse(const mat4 &m)
         + m.v[0][2] * Inverse.v[0][2]
         + m.v[0][3] * Inverse.v[0][3];
 
-    if (fabs(determinant) <= 1e-5f)
-        return mat4(0.0f);
-
     Inverse *= 1.0f / determinant;
 
     return transpose(Inverse);
