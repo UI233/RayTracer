@@ -9,9 +9,7 @@
 
 
 __device__ float3 pathTracer(Ray r, Scene &scene, curandStatePhilox4_32_10_t *state, Camera *cam)
-{/*
-    StratifiedSampler<TWO> sampler_light(8, state);
-    StratifiedSampler<TWO> sampler_scatter(8, state);*/
+{
     IntersectRecord rec;
     bool ishit, specular_bounce = false;
     int cnt_scatter = 0, cnt_light = 0, cnt_q = 0;//Count the number of samples for sampler
@@ -51,7 +49,6 @@ __device__ float3 pathTracer(Ray r, Scene &scene, curandStatePhilox4_32_10_t *st
                         }
                     }
                 }
-                //Debug
             }
             else
             {
@@ -66,7 +63,7 @@ __device__ float3 pathTracer(Ray r, Scene &scene, curandStatePhilox4_32_10_t *st
 
         if (!ishit || bounces > MAX_DEPTH)
             break;
-		//return make_float3(1.0f, 1.0f, 1.0f);
+
         specular_bounce = rec.material_type & material::SPECULAR;
         //Sample one light to light the intersection point
         //won't sample for perferctly specular surface cause only the wi direction would be accounted 
@@ -75,12 +72,6 @@ __device__ float3 pathTracer(Ray r, Scene &scene, curandStatePhilox4_32_10_t *st
             le = scene.sampleAllLight(rec,  state);
             res += beta * le;
         }
-        else if(rec.material -> isTrans())
-        {
-            //if refraction
-            float t = rec.material->eta * rec.material->eta;
-            etaScale = dot(-r.getDir(), rec.normal) < 0 ? 1.0f / t : t;
-        }
         //use brdf to sample new direction
         le = rec.sample_f(-r.getDir(), &wi, &pdf, sample_scatter);
         if (pdf < 0.0001f || length(le) < 0.0001f)
@@ -88,11 +79,9 @@ __device__ float3 pathTracer(Ray r, Scene &scene, curandStatePhilox4_32_10_t *st
         beta *= le * fabs(dot(wi, rec.normal)) / pdf;
         r = rec.spawnRay(wi);
         //Russian roulette to determine whether to terminate the routine
-        rrbeta = beta * etaScale;
-        max_comp = maxComp(rrbeta);
-        if (bounces > 3 && max_comp < 1.0f )
+        if (bounces > 3 )
         {
-            q = (1.0f - max_comp) > 0.5 ? (1.0f - max_comp) : 0.5;
+            q =  0.5;
             if (tmp.z < q)
                 break;
             beta /= 1.0f - q;

@@ -186,7 +186,7 @@ __device__ float3 EnvironmentLight::L(const float3 &r, IntersectRecord *rec) con
     float sint = sin(theta);
     if (sint > 0.001f)
     {
-        float phi = atan2f(r.x, r.z);
+        phi = atan2f(r.x, r.z);
         if (r.z  < 0.0f)
             phi += M_PI;
         if (phi < 0.0f)

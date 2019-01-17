@@ -146,6 +146,7 @@ public:
             float costhetaT = sqrtf(1.0f - etas * etas *sin2theta);
 
             *wi = -etas * wo + (etas * wo.y - costhetaT) * make_float3(0.0f, 1.0f, 0.0f);
+            *wi = normalize(*wi);
             return (1.0f - F) * c / fmaxf(fabs(wi->y), 0.0000001f);
         }
     }
@@ -155,7 +156,7 @@ public:
     }
     CUDA_FUNC float PDF(const float3 &wo, const float3 &wi) const
     {
-        return false;
+        return 0.0f;
     }
 private:
     float3 color;
