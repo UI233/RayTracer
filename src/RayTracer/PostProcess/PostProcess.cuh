@@ -36,14 +36,13 @@ __device__ __forceinline__ float3 HDR(float3 x)
     return saturate((x*(a*x + b)) / (x*(c*x + d) + e));
 }
 
-__global__ void HDRKernel(cudaSurfaceObject_t surface_w, cudaSurfaceObject_t surface_r, int width_per_thread, int height_per_thread, int width_per_block, int height_per_block)
+__global__ void HDRKernel(cudaSurfaceObject_t surface_w, cudaSurfaceObject_t surface_r, int width_per_thread, int height_per_thread, int width_per_block, int height_per_block, float4 *out)
 {
     int stx = blockIdx.x * width_per_block + threadIdx.x * width_per_thread;
     int sty = blockIdx.y * height_per_block + threadIdx.y * height_per_thread;
     //printf("%f ", *Ymax);
     float4 color;
     float3 tmp;
-    float gamma = 1.0f / 2.2f;
 
     for(int x = stx;x < stx + width_per_thread; x++)
         for (int y = sty; y < sty + height_per_thread; y++)
@@ -51,13 +50,13 @@ __global__ void HDRKernel(cudaSurfaceObject_t surface_w, cudaSurfaceObject_t sur
             surf2Dread(&color, surface_r, x * sizeof(float4), y);
             tmp = HDR(make_float3(color.x, color.y, color.z));
             surf2Dwrite(make_float4(tmp.x, tmp.y, tmp.z, 1.0f), surface_w, x * sizeof(float4), y);
-        
+            //out[y * WIDTH + x] = make_float4(tmp.x, tmp.y, tmp.z, 1.0f);
         }
 
 }
 //Incompleted
 //
-__global__ void filterKernel(cudaSurfaceObject_t surface, cudaSurfaceObject_t surface_tmp, int width_per_thread, int height_per_thread, int width_per_block, int height_per_block, int width, int height)
+__global__ void filterKernel(cudaSurfaceObject_t surface_tmp, int width_per_thread, int height_per_thread, int width_per_block, int height_per_block, int width, int height, float4 *out)
 {
     int stx = blockIdx.x * width_per_block + threadIdx.x * width_per_thread;
     int sty = blockIdx.y * height_per_block + threadIdx.y * height_per_thread;
@@ -99,6 +98,7 @@ __global__ void filterKernel(cudaSurfaceObject_t surface, cudaSurfaceObject_t su
 					}
 				}
 
-            surf2Dwrite(temp[count/2] , surface, x * sizeof(float4), y);
+            //surf2Dwrite(temp[count / 2], surface, x * sizeof(float4), y);
+            out[y * width + x] = temp[count / 2];
         }
 }
