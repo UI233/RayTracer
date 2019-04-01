@@ -1,6 +1,5 @@
 # A Simple Ray Tracer
 
-Project for the course : Computer Graphics ZJU.
 
 Programmed using CUDA.
 
